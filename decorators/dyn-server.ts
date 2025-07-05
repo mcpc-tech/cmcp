@@ -26,6 +26,22 @@ export const ToolResponseRequestSchema = z.object({
   }),
 });
 
+export const ClientToolRegistrationRequestSchema = z.object({
+  method: z.literal("client/register_tools"),
+  params: z.object({
+    clientId: z.string(),
+    tools: z.array(z.object({
+      name: z.string(),
+      description: z.string(),
+      inputSchema: z.object({
+        type: z.literal("object"),
+        properties: z.record(z.unknown()).optional(),
+        required: z.array(z.string()).optional(),
+      }).passthrough(),
+    })),
+  }),
+});
+
 export interface ToolDefinition extends Tool {
   implementation: (args: Record<string, unknown>) => Promise<unknown> | unknown;
 }
@@ -34,6 +50,9 @@ export class DynServer {
   private server: Server;
   private clientId: string;
   private tools: Map<string, Tool> = new Map();
+  private clientTools: Map<string, Set<string>> = new Map(); // clientId -> tool names
+  private toolToClient: Map<string, string> = new Map(); // toolName -> clientId
+  private useNamespacing: boolean = false; // Enable namespacing for tool isolation
   private pendingRequests: Map<string, {
     resolve: (value: CallToolResult) => void;
     reject: (reason: Error | McpError) => void;
@@ -44,6 +63,8 @@ export class DynServer {
   constructor(server: Server, clientId: string) {
     this.server = server;
     this.clientId = clientId;
+
+    this.setupStandardHandlers();
 
     return new Proxy(this, {
       get(target, prop) {
@@ -59,29 +80,150 @@ export class DynServer {
     }) as unknown as DynServer & Server;
   }
 
-  /**
-   * Register tools (only register definitions, not implementations)
-   */
-  registerToolSchemas(tools: ToolDefinition[]) {
-    for (const tool of tools) {
-      this.tools.set(tool.name, {
-        name: tool.name,
-        description: tool.description,
-        inputSchema: tool.inputSchema,
-      });
-    }
+  private setupStandardHandlers() {
+    // Handle tool list requests
     this.server.setRequestHandler(ListToolsRequestSchema, () => {
       return { tools: Array.from(this.tools.values()) };
     });
 
+    // Handle tool call requests
     this.server.setRequestHandler(CallToolRequestSchema, (request, _extra) => {
       return this.callTool(request.params);
     });
 
+    // Handle client tool registration
+    this.server.setRequestHandler(
+      ClientToolRegistrationRequestSchema,
+      (request) => this.handleClientToolRegistration(request.params)
+    );
+
+    // Handle client tool execution responses
     this.server.setRequestHandler(
       ToolResponseRequestSchema,
       (request) => this.handleClientResponse(request.params),
     );
+  }
+
+  /**
+   * Enable or disable tool namespacing for multi-client isolation
+   */
+  setNamespacing(enabled: boolean) {
+    this.useNamespacing = enabled;
+  }
+
+  /**
+   * Generate tool name with optional namespacing
+   */
+  private getToolName(clientId: string, toolName: string): string {
+    return this.useNamespacing ? `${clientId}:${toolName}` : toolName;
+  }
+
+  /**
+   * Extract original tool name from namespaced name
+   */
+  private getOriginalToolName(namespacedName: string): string {
+    if (this.useNamespacing && namespacedName.includes(':')) {
+      return namespacedName.split(':').slice(1).join(':');
+    }
+    return namespacedName;
+  }
+
+  /**
+   * Handle client tool registration
+   */
+  handleClientToolRegistration(params: {
+    clientId: string;
+    tools: Array<{
+      name: string;
+      description: string;
+      inputSchema: Record<string, unknown>;
+    }>;
+  }): { status: string; registeredTools: string[]; conflicts: string[] } {
+    const { clientId, tools } = params;
+
+    // Clean up previous tools from this client
+    this.unregisterClientTools(clientId);
+
+    // Register new tools
+    const registeredTools: string[] = [];
+    const conflicts: string[] = [];
+    const clientToolNames = new Set<string>();
+
+    for (const tool of tools) {
+      const toolName = this.getToolName(clientId, tool.name);
+      
+      // Check for tool name conflicts
+      if (this.tools.has(toolName)) {
+        const existingOwner = this.toolToClient.get(toolName);
+        
+        if (this.useNamespacing) {
+          // With namespacing, this shouldn't happen unless there's a bug
+          console.error(`Unexpected tool name conflict with namespacing: ${toolName}`);
+          conflicts.push(tool.name);
+          continue;
+        } else {
+          // Without namespacing, handle conflicts based on strategy
+          console.warn(`Tool ${tool.name} already exists, owned by client ${existingOwner}. Skipping registration for client ${clientId}`);
+          conflicts.push(tool.name);
+          continue;
+        }
+      }
+
+      this.tools.set(toolName, {
+        name: this.useNamespacing ? tool.name : toolName, // Keep original name for display
+        description: this.useNamespacing 
+          ? `[${clientId}] ${tool.description}` 
+          : tool.description,
+        inputSchema: tool.inputSchema as Tool["inputSchema"],
+      });
+
+      clientToolNames.add(toolName);
+      registeredTools.push(tool.name); // Return original name to client
+      this.toolToClient.set(toolName, clientId);
+    }
+
+    this.clientTools.set(clientId, clientToolNames);
+
+    console.log(`Client ${clientId} registered ${registeredTools.length} tools:`, registeredTools);
+    if (conflicts.length > 0) {
+      console.warn(`Client ${clientId} had ${conflicts.length} tool conflicts:`, conflicts);
+    }
+
+    return {
+      status: "success",
+      registeredTools,
+      conflicts,
+    };
+  }
+
+  /**
+   * Unregister all tools from a specific client
+   */
+  unregisterClientTools(clientId: string) {
+    const clientToolNames = this.clientTools.get(clientId);
+    if (clientToolNames) {
+      for (const toolName of clientToolNames) {
+        this.tools.delete(toolName);
+        this.toolToClient.delete(toolName); // Remove tool-to-client mapping
+      }
+      this.clientTools.delete(clientId);
+      console.log(`Unregistered tools for client ${clientId}:`, Array.from(clientToolNames));
+    }
+  }
+
+  /**
+   * Register tools (static registration for backward compatibility)
+   */
+  registerToolSchemas(tools: ToolDefinition[]) {
+    for (const tool of tools) {
+      const toolName = this.getToolName('server', tool.name);
+      this.tools.set(toolName, {
+        name: tool.name,
+        description: tool.description,
+        inputSchema: tool.inputSchema,
+      });
+      this.toolToClient.set(toolName, 'server'); // Mark as server-owned
+    }
   }
 
   /**
@@ -92,13 +234,25 @@ export class DynServer {
     toolName: string,
     args: Record<string, unknown>,
   ): Promise<void> {
+    const targetClientId = this.toolToClient.get(toolName);
+    if (!targetClientId) {
+      throw new Error(`No client found for tool: ${toolName}`);
+    }
+
+    // If it's a server-owned tool, handle differently
+    if (targetClientId === 'server') {
+      throw new Error(`Server-owned tools cannot be executed remotely: ${toolName}`);
+    }
+
+    const originalToolName = this.getOriginalToolName(toolName);
+
     await this.server.notification({
       method: "proxy/execute_tool",
       params: {
         id: requestId,
-        toolName,
+        toolName: originalToolName, // Send original name to client
         args,
-        clientId: this.clientId,
+        clientId: targetClientId,
       },
     });
   }
@@ -223,6 +377,13 @@ export class DynServer {
   }
 
   /**
+   * Handle client disconnect
+   */
+  handleClientDisconnect(clientId: string) {
+    this.unregisterClientTools(clientId);
+  }
+
+  /**
    * Set request timeout
    */
   setRequestTimeout(timeoutMs: number) {
@@ -236,6 +397,13 @@ export class DynServer {
     return {
       clientId: this.clientId,
       registeredTools: Array.from(this.tools.keys()),
+      connectedClients: Array.from(this.clientTools.keys()),
+      clientToolMapping: Object.fromEntries(
+        Array.from(this.clientTools.entries()).map(([clientId, tools]) => [
+          clientId,
+          Array.from(tools),
+        ])
+      ),
       pendingRequests: this.pendingRequests.size,
     };
   }

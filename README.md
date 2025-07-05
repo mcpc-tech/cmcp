@@ -1,70 +1,48 @@
-# Client-Execution MCP Server 🚀
+# Dynamic MCP Server 🚀
 
-> Register tools on server, execute them on client via MCP magic ✨
+> Dynamic tool registration and execution via MCP protocol ✨
 
-## Core Value 🎯
+## Core Features 🎯
 
-**The magic**: Dynamic tool registration and execution via MCP ✨
+**Dynamic Tool Registration**: Clients connect and register their tools automatically
+**Multi-Client Support**: Multiple clients can connect simultaneously 
+**Tool Execution**: Execute client tools seamlessly through the MCP protocol
 
 This enables you to:
-- 🔄 Register custom tools dynamically from any client (browser, CLI, app)
-- ✅ Execute those tools seamlessly through the MCP protocol  
-- 🌐 Build flexible, client-driven AI tool ecosystems
+- 🔄 Register custom tools dynamically when clients connect
+- ✅ Execute tools seamlessly through the MCP protocol  
+- 🌐 Support multiple concurrent clients
+- ⚡ Build flexible, client-driven AI tool ecosystems
 
 ## Getting Started 🚀
 
 ### Basic Setup
 
 1. **Clone the repo**
-2. **Start the server demo**: `deno run --allow-net --allow-read server.ts`
+2. **Start the server demo**: `deno run --allow-net --allow-read --allow-env server.ts`
 3. **Run the client demo**: `deno run --allow-net client.ts`
 
 ### Server Usage 📡
 
-The server only registers tool schemas and proxies execution to clients:
+The server starts with no predefined tools and waits for clients to register them dynamically:
 
 ```typescript
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { createDynServer, ToolDefinition } from "./decorators/dyn-server.ts";
+import { createDynServer } from "./decorators/dyn-server.ts";
 
-// Server only defines tool schemas, no implementations
-const toolSchemas: Pick<ToolDefinition, 'name' | 'description' | 'inputSchema'>[] = [
-  {
-    name: "querySelector",
-    description: "Query DOM elements using CSS selectors",
-    inputSchema: {
-      type: "object",
-      properties: {
-        selector: {
-          type: "string",
-          description: "CSS selector to query"
-        },
-        action: {
-          type: "string", 
-          description: "Action to perform: 'getText', 'click', 'getAttribute'",
-          enum: ["getText", "click", "getAttribute"]
-        },
-        attribute: {
-          type: "string",
-          description: "Attribute name (required for getAttribute action)"
-        }
-      },
-      required: ["selector", "action"]
-    }
-  }
-];
-
+// Server starts empty - no predefined tools
 const server = createDynServer(
-  new Server({ name: "browser-tools", version: "1.0.0" }),
-  "browser-client"
+  new Server({ name: "dynamic-mcp-server", version: "1.0.0" }),
+  "dynamic-server"
 );
 
-server.registerToolSchemas(toolSchemas);
+// No tool registration needed - clients will register dynamically
+// Tools are registered when clients connect
 ```
 
 ### Client Usage 🖥️
 
-The client provides actual tool implementations:
+Clients register their tool implementations and connect to the server:
 
 ```typescript
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -74,10 +52,10 @@ import { ToolDefinition } from "./decorators/dyn-server.ts";
 
 const client = createDynClient(
   new Client({ name: "browser-client", version: "1.0.0" }),
-  "browser-client"
+  "browser-client-001"
 );
 
-// Client implements the actual tools
+// Define tools with implementations
 const tools: ToolDefinition[] = [
   {
     name: "querySelector",
@@ -118,17 +96,21 @@ const tools: ToolDefinition[] = [
   }
 ];
 
+// Register tools (stored locally until connection)
 client.registerTools(tools);
+
+// Connect and automatically register tools to server
 await client.connect(new SSEClientTransport(new URL("http://localhost:9000/sse")));
 
-// Tool execution happens automatically when server receives requests
+console.log("Client connected and tools registered!");
+// Client stays connected to handle tool execution requests
 ```
 
 ### Example Tool Call 🔧
 
 ```typescript
-// Server receives this call and routes to client
-const result = await client.callTool({
+// External system calls tool via server
+const result = await mcpClient.callTool({
   name: "querySelector",
   arguments: {
     selector: "#my-button",
@@ -141,9 +123,12 @@ console.log(result); // "Clicked element: #my-button"
 
 ### Architecture Flow 🔄
 
-1. **Server**: Registers tool definitions with schemas
-2. **Client**: Connects and registers tool implementations  
-3. **MCP Call**: External system calls tool via server
-4. **Proxy**: Server proxies call to appropriate client
-5. **Execute**: Client runs implementation (e.g., browser API)
-6. **Response**: Result flows back through server to caller
+1. **Server**: Starts empty with no predefined tools
+2. **Client Connect**: Client establishes SSE connection to server
+3. **Tool Registration**: Client automatically sends tool definitions via `client/register_tools`
+4. **Server Registry**: Server updates its tool registry with client's tools
+5. **MCP Call**: External system discovers and calls tools via server
+6. **Proxy**: Server proxies call to appropriate client via notification
+7. **Execute**: Client runs implementation and sends result back
+8. **Response**: Result flows back through server to caller
+9. **Client Disconnect**: Server automatically removes client's tools

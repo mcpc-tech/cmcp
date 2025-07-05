@@ -16,10 +16,17 @@ const ToolResponseResultSchema = z.object({
   status: z.string(),
 });
 
+const ClientToolRegistrationResultSchema = z.object({
+  status: z.string(),
+  registeredTools: z.array(z.string()),
+  conflicts: z.array(z.string()).optional(),
+});
+
 export class DynClient {
   private client: Client;
   private clientId: string;
   private tools: Map<string, ToolDefinition["implementation"]> = new Map();
+  private toolDefinitions: ToolDefinition[] = [];
 
   constructor(client: Client, clientId: string) {
     this.client = client;
@@ -45,11 +52,58 @@ export class DynClient {
   }
 
   /**
-   * Register tools (register both definitions and implementations)
+   * Register tools (store locally, will be sent to server on connect)
    */
   registerTools(tools: ToolDefinition[]) {
+    this.toolDefinitions = tools;
     for (const tool of tools) {
       this.tools.set(tool.name, tool.implementation);
+    }
+  }
+
+  /**
+   * Override connect method to register tools after connection
+   */
+  async connect(transport: Parameters<Client["connect"]>[0]): Promise<void> {
+    // Call original connect method
+    await this.client.connect(transport);
+
+    // Register tools to server after successful connection
+    if (this.toolDefinitions.length > 0) {
+      await this.registerToolsToServer();
+    }
+  }
+
+  /**
+   * Register tools to server
+   */
+  private async registerToolsToServer(): Promise<void> {
+    try {
+      const toolSchemas = this.toolDefinitions.map(tool => ({
+        name: tool.name,
+        description: tool.description,
+        inputSchema: tool.inputSchema,
+      }));
+
+      const result = await this.client.request(
+        {
+          method: "client/register_tools",
+          params: {
+            clientId: this.clientId,
+            tools: toolSchemas,
+          },
+        },
+        ClientToolRegistrationResultSchema,
+      );
+
+      console.log(`Successfully registered ${result.registeredTools.length} tools to server:`, result.registeredTools);
+      
+      if (result.conflicts && result.conflicts.length > 0) {
+        console.warn(`Tool registration conflicts for ${result.conflicts.length} tools:`, result.conflicts);
+      }
+    } catch (error) {
+      console.error("Failed to register tools to server:", error);
+      throw error;
     }
   }
 
@@ -116,6 +170,7 @@ export class DynClient {
       clientId: this.clientId,
       toolCount: this.tools.size,
       tools: Array.from(this.tools.keys()),
+      registeredToServer: this.toolDefinitions.length > 0,
     };
   }
 }
