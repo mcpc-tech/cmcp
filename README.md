@@ -1,7 +1,6 @@
 # Client-Tool-Execution MCP Server 🚀
 
 [![JSR](https://jsr.io/badges/@mcpc/cmcp)](https://jsr.io/@mcpc/cmcp)
-[![JSR Score](https://jsr.io/badges/@mcpc/cmcp/score)](https://jsr.io/@mcpc/cmcp)
 
 > Truly Useful Anti-Patterns: Client-Tool-Execution MCP Server
 
