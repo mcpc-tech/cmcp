@@ -45,7 +45,7 @@ export const createMCPServer = () => {
     "1",
   );
 
-  server.registerTools(tools);
+  server.registerToolSchemas(tools);
 
   return Promise.resolve(server);
 };

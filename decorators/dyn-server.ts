@@ -62,7 +62,7 @@ export class DynServer {
   /**
    * Register tools (only register definitions, not implementations)
    */
-  registerTools(tools: ToolDefinition[]) {
+  registerToolSchemas(tools: ToolDefinition[]) {
     for (const tool of tools) {
       this.tools.set(tool.name, {
         name: tool.name,
