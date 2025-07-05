@@ -1,6 +1,9 @@
 # Client-Tool-Execution MCP Server 🚀
 
-> Dynamic MCP tool registration with **client-side execution** ✨
+[![JSR](https://jsr.io/badges/@mcpc/cmcp)](https://jsr.io/@mcpc/cmcp)
+[![JSR Score](https://jsr.io/badges/@mcpc/cmcp/score)](https://jsr.io/@mcpc/cmcp)
+
+> Truly Useful Anti-Patterns: Client-Tool-Execution MCP Server
 
 ## Core Features 🎯
 
@@ -17,11 +20,73 @@ This enables you to:
 
 ## Getting Started 🚀
 
+### Installation
+
+```bash
+# Using Deno (recommended)
+import { createClientExecutionServer, createDynClient } from "jsr:@mcpc/cmcp";
+
+# Or add to your deno.json
+{
+  "imports": {
+    "@mcpc/cmcp": "jsr:@mcpc/cmcp@^0.0.1"
+  }
+}
+```
+
 ### Basic Setup
 
-1. **Clone the repo**
+1. **Install the package**: Add `@mcpc/cmcp` to your project
 2. **Start the server demo**: `deno run --allow-net --allow-read --allow-env server.ts`
 3. **Run the client demo**: `deno run --allow-net client.ts`
+
+### Complete Example
+
+Here's a minimal working example:
+
+**Server (server.ts):**
+```typescript
+import { createClientExecutionServer } from "@mcpc/cmcp";
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+
+const server = createClientExecutionServer(
+  new Server({ name: "my-server", version: "1.0.0" }),
+  "my-server"
+);
+
+// Start server on port 9000
+// (Add your HTTP server setup here)
+```
+
+**Client (client.ts):**
+```typescript
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
+import { createDynClient, type ToolDefinition } from "@mcpc/cmcp";
+
+const client = createDynClient(
+  new Client({ name: "my-client", version: "1.0.0" }),
+  "my-client-001"
+);
+
+const tools: ToolDefinition[] = [
+  {
+    name: "greet",
+    description: "Greet someone",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Name to greet" }
+      },
+      required: ["name"]
+    },
+    implementation: (args) => `Hello, ${args.name}!`
+  }
+];
+
+client.registerTools(tools);
+await client.connect(new SSEClientTransport(new URL("http://localhost:9000/sse")));
+```
 
 ### Server Usage 📡
 
@@ -29,10 +94,10 @@ The server acts as a **proxy and registry** - it has no predefined tools and sim
 
 ```typescript
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { createDynServer } from "./decorators/dyn-server.ts";
+import { createClientExecutionServer } from "@mcpc/cmcp";
 
 // Server is just a proxy - no tools, no execution logic
-const server = createDynServer(
+const server = createClientExecutionServer(
   new Server({ name: "dynamic-mcp-server", version: "1.0.0" }),
   "dynamic-server"
 );
@@ -48,8 +113,7 @@ Clients register tools **with implementations** that execute locally on the clie
 ```typescript
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
-import { createDynClient } from "./decorators/dyn-client.ts";
-import { ToolDefinition } from "./shared/types.ts";
+import { createDynClient, type ToolDefinition } from "@mcpc/cmcp";
 
 const client = createDynClient(
   new Client({ name: "browser-client", version: "1.0.0" }),
@@ -113,7 +177,20 @@ console.log("Client connected and tools registered!");
 ### Example Tool Call 🔧
 
 ```typescript
-// External system calls tool via server
+// External MCP client connecting to the server
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
+
+const mcpClient = new Client({
+  name: "external-client",
+  version: "1.0.0"
+});
+
+await mcpClient.connect(
+  new SSEClientTransport(new URL("http://localhost:9000/sse"))
+);
+
+// Call tools registered by connected clients
 const result = await mcpClient.callTool({
   name: "querySelector",
   arguments: {

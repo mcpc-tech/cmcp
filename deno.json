@@ -1,7 +1,7 @@
 {
-  "name": "@mcpc/dynamic-mcp-server",
+  "name": "@mcpc/cmcp",
   "version": "0.0.1",
-  "description": "Dynamic MCP tool registration with client-side execution - proxy server for Model Context Protocol",
+  "description": "Truly Useful Anti-Patterns: Client-Tool-Execution MCP Server",
   "author": "mcpc.tech",
   "license": "MIT",
   "repository": {
