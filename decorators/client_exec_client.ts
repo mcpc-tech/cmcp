@@ -25,7 +25,8 @@ const ClientToolRegistrationResultSchema = z.object({
 export class ClientExecClient {
   private client: Client;
   private clientId: string;
-  private tools: Map<string, ClientToolDefinition["implementation"]> = new Map();
+  private tools: Map<string, ClientToolDefinition["implementation"]> =
+    new Map();
   private toolDefinitions: ClientToolDefinition[] = [];
 
   constructor(client: Client, clientId: string) {
@@ -79,7 +80,7 @@ export class ClientExecClient {
    */
   private async registerToolsToServer(): Promise<void> {
     try {
-      const toolSchemas = this.toolDefinitions.map(tool => ({
+      const toolSchemas = this.toolDefinitions.map((tool) => ({
         name: tool.name,
         description: tool.description,
         inputSchema: tool.inputSchema,
@@ -96,10 +97,16 @@ export class ClientExecClient {
         ClientToolRegistrationResultSchema,
       );
 
-      console.log(`Successfully registered ${result.registeredTools.length} tools to server:`, result.registeredTools);
-      
+      console.log(
+        `Successfully registered ${result.registeredTools.length} tools to server:`,
+        result.registeredTools,
+      );
+
       if (result.conflicts && result.conflicts.length > 0) {
-        console.warn(`Tool registration conflicts for ${result.conflicts.length} tools:`, result.conflicts);
+        console.warn(
+          `Tool registration conflicts for ${result.conflicts.length} tools:`,
+          result.conflicts,
+        );
       }
     } catch (error) {
       console.error("Failed to register tools to server:", error);
@@ -184,5 +191,7 @@ export function createClientExecClient(
   client: Client,
   clientId: string,
 ): ClientExecClient & Client {
-  return new ClientExecClient(client, clientId) as unknown as ClientExecClient & Client;
+  return new ClientExecClient(client, clientId) as unknown as
+    & ClientExecClient
+    & Client;
 }
