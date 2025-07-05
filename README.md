@@ -1,18 +1,19 @@
-# Dynamic MCP Server 🚀
+# Client-Tool-Execution MCP Server 🚀
 
-> Dynamic tool registration and execution via MCP protocol ✨
+> Dynamic MCP tool registration with **client-side execution** ✨
 
 ## Core Features 🎯
 
-**Dynamic Tool Registration**: Clients connect and register their tools automatically
-**Multi-Client Support**: Multiple clients can connect simultaneously 
-**Tool Execution**: Execute client tools seamlessly through the MCP protocol
+- **Dynamic Tool Registration**: Clients connect and register their tools automatically
+- **Client-Side Tool Execution**: Tools execute on the client side, not the server - perfect for browser DOM manipulation, local file access, or environment-specific operations
+- **Transparent Proxy**: Server acts as a proxy, routing tool calls to the appropriate client for execution
 
 This enables you to:
+
 - 🔄 Register custom tools dynamically when clients connect
-- ✅ Execute tools seamlessly through the MCP protocol  
-- 🌐 Support multiple concurrent clients
-- ⚡ Build flexible, client-driven AI tool ecosystems
+- ⚡ Execute tools **directly on the client** - not on the server
+- 🌐 Build tools that interact with client-specific environments (browser DOM, local files, etc.)
+- 🔗 Create flexible, client-driven AI tool ecosystems where execution happens where the data lives
 
 ## Getting Started 🚀
 
@@ -24,25 +25,25 @@ This enables you to:
 
 ### Server Usage 📡
 
-The server starts with no predefined tools and waits for clients to register them dynamically:
+The server acts as a **proxy and registry** - it has no predefined tools and simply routes execution to clients:
 
 ```typescript
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { createDynServer } from "./decorators/dyn-server.ts";
 
-// Server starts empty - no predefined tools
+// Server is just a proxy - no tools, no execution logic
 const server = createDynServer(
   new Server({ name: "dynamic-mcp-server", version: "1.0.0" }),
   "dynamic-server"
 );
 
-// No tool registration needed - clients will register dynamically
-// Tools are registered when clients connect
+// Server routes all tool calls to the appropriate client
+// All execution happens on the client side
 ```
 
 ### Client Usage 🖥️
 
-Clients register their tool implementations and connect to the server:
+Clients register tools **with implementations** that execute locally on the client:
 
 ```typescript
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -55,7 +56,7 @@ const client = createDynClient(
   "browser-client-001"
 );
 
-// Define tools with implementations
+// Define tools with LOCAL implementations (executed on client)
 const tools: ToolDefinition[] = [
   {
     name: "querySelector",
@@ -64,23 +65,24 @@ const tools: ToolDefinition[] = [
       type: "object",
       properties: {
         selector: { type: "string", description: "CSS selector to query" },
-        action: { 
-          type: "string", 
+        action: {
+          type: "string",
           description: "Action to perform",
-          enum: ["getText", "click", "getAttribute"]
+          enum: ["getText", "click", "getAttribute"],
         },
-        attribute: { type: "string", description: "Attribute name" }
+        attribute: { type: "string", description: "Attribute name" },
       },
-      required: ["selector", "action"]
+      required: ["selector", "action"],
     },
+    // 🔥 Implementation runs on CLIENT side - has access to DOM, local files, etc.
     implementation: async (args: Record<string, unknown>) => {
       const { selector, action, attribute } = args;
       const element = document.querySelector(selector as string);
-      
+
       if (!element) {
         throw new Error(`Element not found: ${selector}`);
       }
-      
+
       switch (action) {
         case "getText":
           return element.textContent || "";
@@ -92,15 +94,17 @@ const tools: ToolDefinition[] = [
         default:
           throw new Error(`Unknown action: ${action}`);
       }
-    }
-  }
+    },
+  },
 ];
 
 // Register tools (stored locally until connection)
 client.registerTools(tools);
 
-// Connect and automatically register tools to server
-await client.connect(new SSEClientTransport(new URL("http://localhost:9000/sse")));
+// Connect and register tools to server
+await client.connect(
+  new SSEClientTransport(new URL("http://localhost:9000/sse"))
+);
 
 console.log("Client connected and tools registered!");
 // Client stays connected to handle tool execution requests
@@ -114,21 +118,37 @@ const result = await mcpClient.callTool({
   name: "querySelector",
   arguments: {
     selector: "#my-button",
-    action: "click"
-  }
+    action: "click",
+  },
 });
 
 console.log(result); // "Clicked element: #my-button"
+// ✨ The actual DOM manipulation happened on the CLIENT side!
 ```
+
+## Why Client-Side Execution? 🤔
+
+**Traditional MCP**: Tools execute on the server
+- ❌ Server needs access to all resources (files, DOM, APIs)
+- ❌ Security concerns with server-side execution
+- ❌ Limited to server environment capabilities
+
+**Client-Tool-Execution MCP**: Tools execute on the client
+- ✅ Client has natural access to its own environment (DOM, local files, etc.)
+- ✅ Better security - no need to expose sensitive resources to server
+- ✅ Scalable - each client handles its own execution load
+- ✅ Environment-specific - browser clients can manipulate DOM, desktop clients can access files
 
 ### Architecture Flow 🔄
 
-1. **Server**: Starts empty with no predefined tools
+1. **Server**: Starts as an empty proxy with no predefined tools
 2. **Client Connect**: Client establishes SSE connection to server
-3. **Tool Registration**: Client automatically sends tool definitions via `client/register_tools`
-4. **Server Registry**: Server updates its tool registry with client's tools
+3. **Tool Registration**: Client sends tool definitions (schema only) via `client/register_tools`
+4. **Server Registry**: Server updates its tool registry with client's tool schemas
 5. **MCP Call**: External system discovers and calls tools via server
-6. **Proxy**: Server proxies call to appropriate client via notification
-7. **Execute**: Client runs implementation and sends result back
+6. **Proxy Call**: Server proxies call to appropriate client via notification
+7. **Client Execution**: 🔥 **Tool runs on CLIENT side** with full access to client environment
 8. **Response**: Result flows back through server to caller
 9. **Client Disconnect**: Server automatically removes client's tools
+
+> **Key Point**: The server never executes tools - it only routes calls to clients where the actual execution happens!
