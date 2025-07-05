@@ -11,7 +11,7 @@ import {
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { ToolDefinition } from "../shared/types.ts";
+import { ClientToolDefinition } from "../shared/types.ts";
 
 export const ToolResponseRequestSchema: z.ZodObject<{
   method: z.ZodLiteral<"proxy/tool_response">;
@@ -35,11 +35,13 @@ export const ClientToolRegistrationRequestSchema: z.ZodObject<{
   method: z.ZodLiteral<"client/register_tools">;
   params: z.ZodObject<{
     clientId: z.ZodString;
-    tools: z.ZodArray<z.ZodObject<{
-      name: z.ZodString;
-      description: z.ZodString;
-      inputSchema: z.ZodRecord<z.ZodString, z.ZodUnknown>;
-    }>>;
+    tools: z.ZodArray<
+      z.ZodObject<{
+        name: z.ZodString;
+        description: z.ZodString;
+        inputSchema: z.ZodRecord<z.ZodString, z.ZodUnknown>;
+      }>
+    >;
   }>;
 }> = z.object({
   method: z.literal("client/register_tools"),
@@ -53,7 +55,7 @@ export const ClientToolRegistrationRequestSchema: z.ZodObject<{
   }),
 });
 
-export class DynServer {
+export class ClientExecServer {
   private server: Server;
   private clientId: string;
   private tools: Map<string, Tool> = new Map();
@@ -84,7 +86,7 @@ export class DynServer {
         }
         return serverProp;
       },
-    }) as unknown as DynServer & Server;
+    }) as unknown as ClientExecServer & Server;
   }
 
   private setupStandardHandlers() {
@@ -101,7 +103,7 @@ export class DynServer {
     // Handle client tool registration
     this.server.setRequestHandler(
       ClientToolRegistrationRequestSchema,
-      (request) => this.handleClientToolRegistration(request.params)
+      (request) => this.handleClientToolRegistration(request.params),
     );
 
     // Handle client tool execution responses
@@ -129,8 +131,8 @@ export class DynServer {
    * Extract original tool name from namespaced name
    */
   private getOriginalToolName(namespacedName: string): string {
-    if (this.useNamespacing && namespacedName.includes(':')) {
-      return namespacedName.split(':').slice(1).join(':');
+    if (this.useNamespacing && namespacedName.includes(":")) {
+      return namespacedName.split(":").slice(1).join(":");
     }
     return namespacedName;
   }
@@ -158,19 +160,23 @@ export class DynServer {
 
     for (const tool of tools) {
       const toolName = this.getToolName(clientId, tool.name);
-      
+
       // Check for tool name conflicts
       if (this.tools.has(toolName)) {
         const existingOwner = this.toolToClient.get(toolName);
-        
+
         if (this.useNamespacing) {
           // With namespacing, this shouldn't happen unless there's a bug
-          console.error(`Unexpected tool name conflict with namespacing: ${toolName}`);
+          console.error(
+            `Unexpected tool name conflict with namespacing: ${toolName}`,
+          );
           conflicts.push(tool.name);
           continue;
         } else {
           // Without namespacing, handle conflicts based on strategy
-          console.warn(`Tool ${tool.name} already exists, owned by client ${existingOwner}. Skipping registration for client ${clientId}`);
+          console.warn(
+            `Tool ${tool.name} already exists, owned by client ${existingOwner}. Skipping registration for client ${clientId}`,
+          );
           conflicts.push(tool.name);
           continue;
         }
@@ -178,8 +184,8 @@ export class DynServer {
 
       this.tools.set(toolName, {
         name: this.useNamespacing ? tool.name : toolName, // Keep original name for display
-        description: this.useNamespacing 
-          ? `[${clientId}] ${tool.description}` 
+        description: this.useNamespacing
+          ? `[${clientId}] ${tool.description}`
           : tool.description,
         inputSchema: tool.inputSchema as Tool["inputSchema"],
       });
@@ -191,9 +197,15 @@ export class DynServer {
 
     this.clientTools.set(clientId, clientToolNames);
 
-    console.log(`Client ${clientId} registered ${registeredTools.length} tools:`, registeredTools);
+    console.log(
+      `Client ${clientId} registered ${registeredTools.length} tools:`,
+      registeredTools,
+    );
     if (conflicts.length > 0) {
-      console.warn(`Client ${clientId} had ${conflicts.length} tool conflicts:`, conflicts);
+      console.warn(
+        `Client ${clientId} had ${conflicts.length} tool conflicts:`,
+        conflicts,
+      );
     }
 
     return {
@@ -214,22 +226,25 @@ export class DynServer {
         this.toolToClient.delete(toolName); // Remove tool-to-client mapping
       }
       this.clientTools.delete(clientId);
-      console.log(`Unregistered tools for client ${clientId}:`, Array.from(clientToolNames));
+      console.log(
+        `Unregistered tools for client ${clientId}:`,
+        Array.from(clientToolNames),
+      );
     }
   }
 
   /**
    * Register tools (static registration for backward compatibility)
    */
-  registerToolSchemas(tools: ToolDefinition[]) {
+  registerToolSchemas(tools: ClientToolDefinition[]) {
     for (const tool of tools) {
-      const toolName = this.getToolName('server', tool.name);
+      const toolName = this.getToolName("server", tool.name);
       this.tools.set(toolName, {
         name: tool.name,
         description: tool.description,
         inputSchema: tool.inputSchema,
       });
-      this.toolToClient.set(toolName, 'server'); // Mark as server-owned
+      this.toolToClient.set(toolName, "server"); // Mark as server-owned
     }
   }
 
@@ -247,8 +262,10 @@ export class DynServer {
     }
 
     // If it's a server-owned tool, handle differently
-    if (targetClientId === 'server') {
-      throw new Error(`Server-owned tools cannot be executed remotely: ${toolName}`);
+    if (targetClientId === "server") {
+      throw new Error(
+        `Server-owned tools cannot be executed remotely: ${toolName}`,
+      );
     }
 
     const originalToolName = this.getOriginalToolName(toolName);
@@ -415,7 +432,7 @@ export class DynServer {
         Array.from(this.clientTools.entries()).map(([clientId, tools]) => [
           clientId,
           Array.from(tools),
-        ])
+        ]),
       ),
       pendingRequests: this.pendingRequests.size,
     };
@@ -439,9 +456,11 @@ export class DynServer {
   }
 }
 
-export function createDynServer(
+export function createClientExecServer(
   server: Server,
   clientId: string,
-): DynServer & Server {
-  return new DynServer(server, clientId) as unknown as DynServer & Server;
+): ClientExecServer & Server {
+  return new ClientExecServer(server, clientId) as unknown as
+    & ClientExecServer
+    & Server;
 }

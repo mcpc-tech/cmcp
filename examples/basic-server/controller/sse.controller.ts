@@ -1,13 +1,14 @@
-import { createRoute, type OpenAPIHono } from "@hono/zod-openapi";
-import { z } from "zod";
-import { handleIncoming } from "../shared/sse.ts";
+import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
+import { handleConnecting } from "../../../shared/sse.ts";
+import { INCOMING_MSG_ROUTE_PATH } from "../const.ts";
+import { createMCPServer } from "../server.ts";
 
-export const messageHandler = (app: OpenAPIHono): OpenAPIHono =>
+export const sseHandler = (app: OpenAPIHono): OpenAPIHono =>
   app.openapi(
     createRoute({
       hide: true,
-      method: "post",
-      path: `/messages`,
+      method: "get",
+      path: "/sse",
       responses: {
         200: {
           content: {
@@ -28,7 +29,11 @@ export const messageHandler = (app: OpenAPIHono): OpenAPIHono =>
       },
     }),
     async (c) => {
-      const response = await handleIncoming(c.req.raw);
+      const response = await handleConnecting(
+        c.req.raw,
+        createMCPServer,
+        INCOMING_MSG_ROUTE_PATH,
+      );
       return response;
     },
     (result, c) => {

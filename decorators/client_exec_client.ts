@@ -1,6 +1,6 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { z } from "zod";
-import { ToolDefinition } from "../shared/types.ts";
+import { ClientToolDefinition } from "../shared/types.ts";
 
 const ExecuteToolNotificationSchema = z.object({
   method: z.literal("proxy/execute_tool"),
@@ -22,11 +22,11 @@ const ClientToolRegistrationResultSchema = z.object({
   conflicts: z.array(z.string()).optional(),
 });
 
-export class DynClient {
+export class ClientExecClient {
   private client: Client;
   private clientId: string;
-  private tools: Map<string, ToolDefinition["implementation"]> = new Map();
-  private toolDefinitions: ToolDefinition[] = [];
+  private tools: Map<string, ClientToolDefinition["implementation"]> = new Map();
+  private toolDefinitions: ClientToolDefinition[] = [];
 
   constructor(client: Client, clientId: string) {
     this.client = client;
@@ -48,13 +48,13 @@ export class DynClient {
         }
         return serverProp;
       },
-    }) as unknown as DynClient & Client;
+    }) as unknown as ClientExecClient & Client;
   }
 
   /**
    * Register tools (store locally, will be sent to server on connect)
    */
-  registerTools(tools: ToolDefinition[]) {
+  registerTools(tools: ClientToolDefinition[]) {
     this.toolDefinitions = tools;
     for (const tool of tools) {
       this.tools.set(tool.name, tool.implementation);
@@ -180,9 +180,9 @@ export class DynClient {
   }
 }
 
-export function createDynClient(
+export function createClientExecClient(
   client: Client,
   clientId: string,
-): DynClient & Client {
-  return new DynClient(client, clientId) as unknown as DynClient & Client;
+): ClientExecClient & Client {
+  return new ClientExecClient(client, clientId) as unknown as ClientExecClient & Client;
 }

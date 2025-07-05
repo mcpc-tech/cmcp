@@ -23,12 +23,12 @@ This enables you to:
 
 ```bash
 # Using Deno (recommended)
-import { createClientExecutionServer, createDynClient } from "jsr:@mcpc/cmcp";
+import { createClientExecServer, createClientExecClient } from "jsr:@mcpc/cmcp";
 
 # Or add to your deno.json
 {
   "imports": {
-    "@mcpc/cmcp": "jsr:@mcpc/cmcp@^0.0.1"
+    "@mcpc/cmcp": "jsr:@mcpc/cmcp@^0.0.2"
   }
 }
 ```
@@ -49,10 +49,10 @@ The server acts as a **proxy and registry** - it has no predefined tools and sim
 
 ```typescript
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { createClientExecutionServer } from "@mcpc/cmcp";
+import { createClientExecServer } from "@mcpc/cmcp";
 
 // Server is just a proxy - no tools, no execution logic
-const server = createClientExecutionServer(
+const server = createClientExecServer(
   new Server({ name: "dynamic-mcp-server", version: "1.0.0" }),
   "dynamic-server"
 );
@@ -68,15 +68,15 @@ Clients register tools **with implementations** that execute locally on the clie
 ```typescript
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
-import { createDynClient, type ToolDefinition } from "@mcpc/cmcp";
+import { createClientExecClient, type ClientToolDefinition } from "@mcpc/cmcp";
 
-const client = createDynClient(
+const client = createClientExecClient(
   new Client({ name: "browser-client", version: "1.0.0" }),
   "browser-client-001"
 );
 
 // Define tools with LOCAL implementations (executed on client)
-const tools: ToolDefinition[] = [
+const tools: ClientToolDefinition[] = [
   {
     name: "querySelector",
     description: "Query DOM elements using CSS selectors",

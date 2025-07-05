@@ -1,6 +1,6 @@
 {
   "name": "@mcpc/cmcp",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Truly Useful Anti-Patterns: Client-Tool-Execution MCP Server",
   "author": "mcpc.tech",
   "license": "MIT",
@@ -29,7 +29,7 @@
   "tasks": {
     "dev": "deno run --watch main.ts",
     "build": "deno check --all .",
-    "test": "deno test --allow-all",
+    "test": "deno test --quiet --allow-all",
     "fmt": "deno fmt",
     "lint": "deno lint"
   },
