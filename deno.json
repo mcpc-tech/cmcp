@@ -20,14 +20,13 @@
   ],
   "exports": {
     ".": "./mod.ts",
-    "./server": "./decorators/dyn-server.ts",
-    "./client": "./decorators/dyn-client.ts",
+    "./server": "./decorators/client_exec_server.ts",
+    "./client": "./decorators/client_exec_client.ts",
+    "./dynamic-client": "./decorators/dynamic_client.ts",
     "./types": "./shared/types.ts",
-    "./sse": "./shared/sse.ts",
-    "./controllers": "./controller/mod.ts"
+    "./sse": "./shared/sse.ts"
   },
   "tasks": {
-    "dev": "deno run --watch main.ts",
     "build": "deno check --all .",
     "test": "deno test --quiet --allow-all",
     "fmt": "deno fmt",

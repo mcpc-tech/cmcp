@@ -1,6 +1,6 @@
 import { assertEquals, assertExists } from "@std/assert";
-import { createApp, createMCPServer } from "./examples/basic-server/server.ts";
-import { createClient } from "./examples/basic-server/client.ts";
+import { createApp, createMCPServer } from "./examples/basic/server.ts";
+import { createClient } from "./examples/basic/client.ts";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 
@@ -10,7 +10,7 @@ const TEST_PORT = 9001;
 const TEST_HOST = "127.0.0.1";
 const TEST_URL = `http://${TEST_HOST}:${TEST_PORT}`;
 
-Deno.test("examples集成测试", async (t) => {
+Deno.test("Integration test for MCP server and client", async (t) => {
   const app = createApp();
   const abortController = new AbortController();
 
