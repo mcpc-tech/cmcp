@@ -1,6 +1,37 @@
 {
+  "name": "@mcpc/dynamic-mcp-server",
+  "version": "0.0.1",
+  "description": "Dynamic MCP tool registration with client-side execution - proxy server for Model Context Protocol",
+  "author": "mcpc.tech",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mcpc-tech/dynamic-mcp-server.git"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "dynamic",
+    "client-execution",
+    "proxy",
+    "tools",
+    "ai",
+    "llm"
+  ],
+  "exports": {
+    ".": "./mod.ts",
+    "./server": "./decorators/dyn-server.ts",
+    "./client": "./decorators/dyn-client.ts",
+    "./types": "./shared/types.ts",
+    "./sse": "./shared/sse.ts",
+    "./controllers": "./controller/mod.ts"
+  },
   "tasks": {
-    "dev": "deno run --watch main.ts"
+    "dev": "deno run --watch main.ts",
+    "build": "deno check --all .",
+    "test": "deno test --allow-all",
+    "fmt": "deno fmt",
+    "lint": "deno lint"
   },
   "imports": {
     "@hono/zod-openapi": "npm:@hono/zod-openapi@^0.19.9",
@@ -8,5 +39,14 @@
     "@std/assert": "jsr:@std/assert@^1.0.13",
     "@std/http": "jsr:@std/http@^1.0.19",
     "zod": "npm:zod@^3.25.74"
+  },
+  "publish": {
+    "exclude": [
+      "*.lock",
+      ".vscode/",
+      ".git/",
+      "server.ts",
+      "client.ts"
+    ]
   }
 }

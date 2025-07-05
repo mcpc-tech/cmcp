@@ -11,12 +11,17 @@ import {
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
+import { ToolDefinition } from "../shared/types.ts";
 
-export interface ToolDefinition extends Tool {
-  implementation: (args: Record<string, unknown>) => Promise<unknown> | unknown;
-}
-
-export const ToolResponseRequestSchema = z.object({
+export const ToolResponseRequestSchema: z.ZodObject<{
+  method: z.ZodLiteral<"proxy/tool_response">;
+  params: z.ZodObject<{
+    id: z.ZodString;
+    success: z.ZodBoolean;
+    result: z.ZodOptional<z.ZodUnknown>;
+    error: z.ZodOptional<z.ZodString>;
+  }>;
+}> = z.object({
   method: z.literal("proxy/tool_response"),
   params: z.object({
     id: z.string(),
@@ -26,25 +31,27 @@ export const ToolResponseRequestSchema = z.object({
   }),
 });
 
-export const ClientToolRegistrationRequestSchema = z.object({
+export const ClientToolRegistrationRequestSchema: z.ZodObject<{
+  method: z.ZodLiteral<"client/register_tools">;
+  params: z.ZodObject<{
+    clientId: z.ZodString;
+    tools: z.ZodArray<z.ZodObject<{
+      name: z.ZodString;
+      description: z.ZodString;
+      inputSchema: z.ZodRecord<z.ZodString, z.ZodUnknown>;
+    }>>;
+  }>;
+}> = z.object({
   method: z.literal("client/register_tools"),
   params: z.object({
     clientId: z.string(),
     tools: z.array(z.object({
       name: z.string(),
       description: z.string(),
-      inputSchema: z.object({
-        type: z.literal("object"),
-        properties: z.record(z.unknown()).optional(),
-        required: z.array(z.string()).optional(),
-      }).passthrough(),
+      inputSchema: z.record(z.unknown()),
     })),
   }),
 });
-
-export interface ToolDefinition extends Tool {
-  implementation: (args: Record<string, unknown>) => Promise<unknown> | unknown;
-}
 
 export class DynServer {
   private server: Server;
@@ -393,7 +400,13 @@ export class DynServer {
   /**
    * Get status information
    */
-  getStatus() {
+  getStatus(): {
+    clientId: string;
+    registeredTools: string[];
+    connectedClients: string[];
+    clientToolMapping: Record<string, string[]>;
+    pendingRequests: number;
+  } {
     return {
       clientId: this.clientId,
       registeredTools: Array.from(this.tools.keys()),

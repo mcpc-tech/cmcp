@@ -9,13 +9,16 @@ import {
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 
-export interface ClientTool extends Tool {
+export interface LegacyClientTool extends Tool {
   implementation: (args: Record<string, unknown>) => Promise<unknown> | unknown;
 }
 
-export class DynamicClientDecorator {
+/**
+ * @deprecated This implementation is non-standard and not recommended.
+ */
+export class LegacyDynamicClientDecorator {
   private client: Client;
-  private clientTools: Map<string, ClientTool> = new Map();
+  private clientTools: Map<string, LegacyClientTool> = new Map();
 
   constructor(client: Client) {
     this.client = client;
@@ -45,7 +48,7 @@ export class DynamicClientDecorator {
       args: Record<string, unknown>,
     ) => Promise<unknown> | unknown,
   ) {
-    const tool: ClientTool = {
+    const tool: LegacyClientTool = {
       name,
       description,
       inputSchema,
@@ -64,7 +67,7 @@ export class DynamicClientDecorator {
   /**
    * Get all client tools
    */
-  getClientTools(): ClientTool[] {
+  getClientTools(): LegacyClientTool[] {
     return Array.from(this.clientTools.values());
   }
 
@@ -184,6 +187,11 @@ export class DynamicClientDecorator {
   }
 }
 
-export function createDynamicClient(client: Client): DynamicClientDecorator {
-  return new DynamicClientDecorator(client);
+/**
+ * @deprecated This implementation is non-standard and not recommended.
+ */
+export function createLegacyDynamicClient(
+  client: Client,
+): LegacyDynamicClientDecorator {
+  return new LegacyDynamicClientDecorator(client);
 }

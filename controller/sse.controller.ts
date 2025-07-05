@@ -3,7 +3,7 @@ import { INCOMING_MSG_ROUTE_PATH } from "../shared/const.ts";
 import { handleConnecting } from "../shared/sse.ts";
 import { createMCPServer } from "../app.ts";
 
-export const sseHandler = (app: OpenAPIHono) =>
+export const sseHandler = (app: OpenAPIHono): OpenAPIHono =>
   app.openapi(
     createRoute({
       hide: true,

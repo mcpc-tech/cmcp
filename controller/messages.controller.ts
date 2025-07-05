@@ -2,7 +2,7 @@ import { createRoute, type OpenAPIHono } from "@hono/zod-openapi";
 import { z } from "zod";
 import { handleIncoming } from "../shared/sse.ts";
 
-export const messageHandler = (app: OpenAPIHono) =>
+export const messageHandler = (app: OpenAPIHono): OpenAPIHono =>
   app.openapi(
     createRoute({
       hide: true,

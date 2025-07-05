@@ -1,6 +1,6 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { z } from "zod";
-import { ToolDefinition } from "./dyn-server.ts";
+import { ToolDefinition } from "../shared/types.ts";
 
 const ExecuteToolNotificationSchema = z.object({
   method: z.literal("proxy/execute_tool"),
@@ -165,7 +165,12 @@ export class DynClient {
   /**
    * Get client status
    */
-  getStatus() {
+  getStatus(): {
+    clientId: string;
+    toolCount: number;
+    tools: string[];
+    registeredToServer: boolean;
+  } {
     return {
       clientId: this.clientId,
       toolCount: this.tools.size,

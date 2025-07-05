@@ -1,7 +1,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 import { createDynClient } from "./decorators/dyn-client.ts";
-import { ToolDefinition } from "./decorators/dyn-server.ts";
+import { ToolDefinition } from "./shared/types.ts";
 
 // Define client-specific tools with implementations
 const clientTools: ToolDefinition[] = [

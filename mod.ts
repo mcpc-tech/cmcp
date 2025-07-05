@@ -6,13 +6,18 @@
 export {
   createDynServer as createClientExecutionServer,
   DynServer as ClientExecutionServer,
-  type ToolDefinition,
 } from "./decorators/dyn-server.ts";
 
+export { createDynClient, DynClient } from "./decorators/dyn-client.ts";
+
+// Export types
+export { type ToolDefinition } from "./shared/types.ts";
+
 export {
-  createDynClient as createClientExecutionClient,
-  DynClient as ClientExecutionClient,
-} from "./decorators/dyn-client.ts";
+  createLegacyDynamicClient,
+  type LegacyClientTool,
+  LegacyDynamicClientDecorator,
+} from "./decorators/dynamic-client.ts";
 
 // Export SSE utilities for real-time communication
 export {
@@ -25,10 +30,6 @@ export {
 export * from "./shared/const.ts";
 
 // Export controllers for client communication
-export {
-  messageHandler as ClientExecutionMessageHandler,
-} from "./controller/messages.controller.ts";
+export { messageHandler } from "./controller/messages.controller.ts";
 
-export {
-  sseHandler as ClientExecutionSSEHandler,
-} from "./controller/sse.controller.ts";
+export { sseHandler } from "./controller/sse.controller.ts";
