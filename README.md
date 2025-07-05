@@ -24,6 +24,7 @@ This enables you to:
 The server only registers tool schemas and proxies execution to clients:
 
 ```typescript
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { createDynServer, ToolDefinition } from "./decorators/dyn-server.ts";
 
 // Server only defines tool schemas, no implementations
@@ -66,7 +67,10 @@ server.registerToolSchemas(toolSchemas);
 The client provides actual tool implementations:
 
 ```typescript
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 import { createDynClient } from "./decorators/dyn-client.ts";
+import { ToolDefinition } from "./decorators/dyn-server.ts";
 
 const client = createDynClient(
   new Client({ name: "browser-client", version: "1.0.0" }),
