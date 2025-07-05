@@ -17,6 +17,7 @@
     "npm:@hono/zod-openapi@~0.19.9": "0.19.9_hono@4.8.4_zod@3.25.74",
     "npm:@modelcontextprotocol/sdk@^1.15.0": "1.15.0_express@5.1.0_zod@3.25.74",
     "npm:@types/node@*": "22.15.15",
+    "npm:hono@*": "4.8.4",
     "npm:zod@^3.25.74": "3.25.74"
   },
   "jsr": {
