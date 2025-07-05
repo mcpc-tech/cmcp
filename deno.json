@@ -44,8 +44,10 @@
       "*.lock",
       ".vscode/",
       ".git/",
-      "server.ts",
-      "client.ts"
+      ".github/",
+      "examples/",
+      "*_test.ts",
+      "*_integration_test.ts"
     ]
   }
 }
