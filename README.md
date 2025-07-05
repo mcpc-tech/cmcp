@@ -43,50 +43,6 @@ import { createClientExecutionServer, createDynClient } from "jsr:@mcpc/cmcp";
 
 Here's a minimal working example:
 
-**Server (server.ts):**
-```typescript
-import { createClientExecutionServer } from "@mcpc/cmcp";
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-
-const server = createClientExecutionServer(
-  new Server({ name: "my-server", version: "1.0.0" }),
-  "my-server"
-);
-
-// Start server on port 9000
-// (Add your HTTP server setup here)
-```
-
-**Client (client.ts):**
-```typescript
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
-import { createDynClient, type ToolDefinition } from "@mcpc/cmcp";
-
-const client = createDynClient(
-  new Client({ name: "my-client", version: "1.0.0" }),
-  "my-client-001"
-);
-
-const tools: ToolDefinition[] = [
-  {
-    name: "greet",
-    description: "Greet someone",
-    inputSchema: {
-      type: "object",
-      properties: {
-        name: { type: "string", description: "Name to greet" }
-      },
-      required: ["name"]
-    },
-    implementation: (args) => `Hello, ${args.name}!`
-  }
-];
-
-client.registerTools(tools);
-await client.connect(new SSEClientTransport(new URL("http://localhost:9000/sse")));
-```
-
 ### Server Usage 📡
 
 The server acts as a **proxy and registry** - it has no predefined tools and simply routes execution to clients:
