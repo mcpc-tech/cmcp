@@ -1,17 +1,17 @@
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import {
-  CallToolRequest,
+  type CallToolRequest,
   CallToolRequestSchema,
-  CallToolResult,
+  type CallToolResult,
   ErrorCode,
-  ListToolsRequest,
+  type ListToolsRequest,
   ListToolsRequestSchema,
-  ListToolsResult,
+  type ListToolsResult,
   McpError,
-  Tool,
+  type Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { ClientToolDefinition } from "../shared/types.ts";
+import type { ClientToolDefinition } from "../shared/types.ts";
 
 export const ToolResponseRequestSchema: z.ZodObject<{
   method: z.ZodLiteral<"proxy/tool_response">;

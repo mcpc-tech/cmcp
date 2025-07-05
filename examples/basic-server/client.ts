@@ -1,7 +1,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 import { createClientExecClient } from "../../decorators/client_exec_client.ts";
-import { ClientToolDefinition } from "../../shared/types.ts";
+import type { ClientToolDefinition } from "../../shared/types.ts";
 
 // Define client-specific tools with implementations
 const clientTools: ClientToolDefinition[] = [

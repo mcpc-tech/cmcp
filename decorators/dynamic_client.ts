@@ -1,12 +1,12 @@
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import {
-  CallToolRequest,
-  CallToolResult,
+  type CallToolRequest,
+  type CallToolResult,
   ErrorCode,
-  ListToolsRequest,
-  ListToolsResult,
+  type ListToolsRequest,
+  type ListToolsResult,
   McpError,
-  Tool,
+  type Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 
 export interface LegacyClientTool extends Tool {

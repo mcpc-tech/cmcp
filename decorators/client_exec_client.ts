@@ -1,6 +1,6 @@
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { z } from "zod";
-import { ClientToolDefinition } from "../shared/types.ts";
+import type { ClientToolDefinition } from "../shared/types.ts";
 
 const ExecuteToolNotificationSchema = z.object({
   method: z.literal("proxy/execute_tool"),
