@@ -1,6 +1,6 @@
 {
   "name": "@mcpc/cmcp",
-  "version": "0.0.2",
+  "version": "0.0.2-beta-4",
   "description": "Truly Useful Anti-Patterns: Client-Tool-Execution MCP Server",
   "author": "mcpc.tech",
   "license": "MIT",
@@ -22,9 +22,7 @@
     ".": "./mod.ts",
     "./server": "./decorators/client_exec_server.ts",
     "./client": "./decorators/client_exec_client.ts",
-    "./dynamic-client": "./decorators/dynamic_client.ts",
-    "./types": "./shared/types.ts",
-    "./sse": "./shared/sse.ts"
+    "./types": "./shared/types.ts"
   },
   "tasks": {
     "build": "deno check --all .",

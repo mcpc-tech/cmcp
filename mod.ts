@@ -8,18 +8,15 @@ export {
   createClientExecClient,
 } from "./decorators/client_exec_client.ts";
 
-export {
-  ClientExecClientProxy,
-  createClientExecProxyClient,
-  createClientExecProxyTransport,
-} from "./decorators/client_exec_client_with_proxy.ts";
-
 export { type ClientToolDefinition } from "./shared/types.ts";
 
 export {
   handleConnecting,
   handleIncoming,
   SSEServerTransport,
-} from "./shared/sse.ts";
+} from "./transports/server/sse.ts";
 
-export { WorkerTransport } from "./transports/worker.ts";
+export { WorkerTransport } from "./transports/client/web-worker.ts";
+export { WorkerServerTransport } from "./transports/server/web-worker.ts";
+
+export { runClientExecServerWoker } from "./workers/client_exec_server_proxy.ts";

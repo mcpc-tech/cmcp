@@ -13,7 +13,7 @@ import {
   JSONRPCMessageSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { ServerSentEventStream } from "@std/http/server-sent-event-stream";
-import type { ClientExecServer } from "../decorators/client_exec_server.ts";
+import type { ClientExecServer } from "../../decorators/client_exec_server.ts";
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 
 type SupportedServer = McpServer | (ClientExecServer & Server);

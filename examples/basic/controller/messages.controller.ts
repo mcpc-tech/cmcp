@@ -1,6 +1,6 @@
 import { createRoute, type OpenAPIHono } from "@hono/zod-openapi";
 import { z } from "zod";
-import { handleIncoming } from "../../../shared/sse.ts";
+import { handleIncoming } from "../../../transports/server/sse.ts";
 
 export const messageHandler = (app: OpenAPIHono): OpenAPIHono =>
   app.openapi(

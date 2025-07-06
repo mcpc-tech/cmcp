@@ -54,3 +54,15 @@ export class WorkerTransport implements Transport {
     return Promise.resolve();
   }
 }
+
+export function createClientExecWorkerTransport(
+  worker: Worker
+): WorkerTransport {
+  globalThis.addEventListener("beforeunload", () => {
+    console.log("Terminating the shared worker instance...");
+    worker.terminate();
+  });
+
+  const transport = new WorkerTransport(worker);
+  return transport;
+}

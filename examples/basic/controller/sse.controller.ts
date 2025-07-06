@@ -1,5 +1,5 @@
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
-import { handleConnecting } from "../../../shared/sse.ts";
+import { handleConnecting } from "../../../transports/server/sse.ts";
 import { INCOMING_MSG_ROUTE_PATH } from "../const.ts";
 import { createMCPServer } from "../server.ts";
 
