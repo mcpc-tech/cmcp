@@ -8,16 +8,18 @@ export {
   createClientExecClient,
 } from "./decorators/client_exec_client.ts";
 
-export { type ClientToolDefinition } from "./shared/types.ts";
-
 export {
-  createLegacyDynamicClient,
-  type LegacyClientTool,
-  LegacyDynamicClientDecorator,
-} from "./decorators/dynamic_client.ts";
+  ClientExecClientProxy,
+  createClientExecProxyClient,
+  createClientExecProxyTransport,
+} from "./decorators/client_exec_client_with_proxy.ts";
+
+export { type ClientToolDefinition } from "./shared/types.ts";
 
 export {
   handleConnecting,
   handleIncoming,
   SSEServerTransport,
 } from "./shared/sse.ts";
+
+export { WorkerTransport } from "./transports/worker.ts";
