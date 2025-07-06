@@ -5,7 +5,9 @@ import {
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { WorkerServerTransport } from "../transports/server/web-worker.ts";
 
-export const runClientExecServerWoker: () => ClientExecServer & Server = () => {
+export const runClientExecServerWoker: () => Promise<
+  ClientExecServer & Server
+> = async () => {
   const server = createClientExecServer(
     new Server(
       {
@@ -16,6 +18,6 @@ export const runClientExecServerWoker: () => ClientExecServer & Server = () => {
     ),
     "cmcp-server"
   );
-  server.connect(new WorkerServerTransport());
+  await server.connect(new WorkerServerTransport());
   return server;
 };
