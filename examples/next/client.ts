@@ -1,6 +1,6 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
-import { createClientExecClient } from "../../decorators/client_exec_client.ts";
+import { createToolAugmentingClient } from "../../decorators/client_exec_client_next.ts";
 import type { ClientToolDefinition } from "../../shared/types.ts";
 
 // Define client-specific tools with implementations
@@ -29,8 +29,8 @@ const clientTools: ClientToolDefinition[] = [
       const repeat = (args.repeat as number) || 1;
       return {
         content: [{
-          type: "text",
           text: Array(repeat).fill(message).join(" "),
+          type: "text",
         }],
       };
     },
@@ -54,10 +54,10 @@ const clientTools: ClientToolDefinition[] = [
       const now = new Date();
       return {
         content: [{
-          type: "text",
           text: format === "timestamp"
             ? now.getTime().toString()
             : now.toISOString(),
+          type: "text",
         }],
       };
     },
@@ -65,7 +65,7 @@ const clientTools: ClientToolDefinition[] = [
 ];
 
 export const createClient = () => {
-  const client = createClientExecClient(
+  const client = createToolAugmentingClient(
     new Client(
       { name: "demo-client", version: "1.0.0" },
       { capabilities: {} },

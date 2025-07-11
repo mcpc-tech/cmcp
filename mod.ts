@@ -8,6 +8,11 @@ export {
   createClientExecClient,
 } from "./decorators/client_exec_client.ts";
 
+export {
+  createToolAugmentingClient,
+  ToolAugmentingClient,
+} from "./decorators/client_exec_client_next.ts";
+
 export { type ClientToolDefinition } from "./shared/types.ts";
 
 export {

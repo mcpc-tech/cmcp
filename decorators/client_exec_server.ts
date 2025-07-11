@@ -340,30 +340,7 @@ export class ClientExecServer {
     clearTimeout(pending.timeout);
     this.pendingRequests.delete(params.id);
 
-    if (params.success) {
-      const result: CallToolResult = {
-        content: [
-          {
-            type: "text",
-            text: typeof params.result === "string"
-              ? params.result
-              : JSON.stringify(params.result, null, 2),
-          },
-        ],
-      };
-      pending.resolve(result);
-    } else {
-      const errorResult: CallToolResult = {
-        content: [
-          {
-            type: "text",
-            text: `Tool execution failed: ${params.error || "Unknown error"}`,
-          },
-        ],
-        isError: true,
-      };
-      pending.resolve(errorResult);
-    }
+    pending.resolve(params.result as CallToolResult);
 
     return { status: "received" };
   }
