@@ -1,7 +1,6 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { createApp, createMCPServer } from "./examples/basic/server.ts";
 import { createClient } from "./examples/basic/client.ts";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -32,7 +31,7 @@ Deno.test("Integration test for MCP server and client", async (t) => {
       const response = await fetch(`${TEST_URL}/sse`, {
         method: "GET",
         headers: {
-          "Accept": "text/event-stream",
+          Accept: "text/event-stream",
         },
       });
       // Server should respond (even if it's a 404 or other response)
@@ -58,9 +57,7 @@ Deno.test("Integration test for MCP server and client", async (t) => {
 
     try {
       // Connect to the test server
-      await client.connect(
-        new SSEClientTransport(new URL(`${TEST_URL}/sse`)),
-      );
+      await client.connect(new SSEClientTransport(new URL(`${TEST_URL}/sse`)));
 
       // Wait a bit for connection to establish
       await delay(500);
@@ -79,9 +76,7 @@ Deno.test("Integration test for MCP server and client", async (t) => {
     const client = createClient();
 
     try {
-      await client.connect(
-        new SSEClientTransport(new URL(`${TEST_URL}/sse`)),
-      );
+      await client.connect(new SSEClientTransport(new URL(`${TEST_URL}/sse`)));
 
       await delay(500);
 
@@ -119,75 +114,19 @@ Deno.test("Integration test for MCP server and client", async (t) => {
   });
 
   await t.step(
-    "External MCP client should be able to call registered tools",
+    "Client should be able to call server tool directly",
     async () => {
-      // First, connect our client to register tools
-      const dynamicClient = createClient();
-      await dynamicClient.connect(
-        new SSEClientTransport(new URL(`${TEST_URL}/sse`)),
-      );
+      const client = createClient();
+      await client.connect(new SSEClientTransport(new URL(`${TEST_URL}/sse`)));
+      await delay(500);
 
-      await delay(1000); // Wait longer for registration
-
-      // Now connect an external MCP client
-      const externalClient = new Client({
-        name: "test-external-client",
-        version: "1.0.0",
+      const result = await client.callTool({
+        name: "example-tool",
+        arguments: {},
       });
-
-      try {
-        await externalClient.connect(
-          new SSEClientTransport(new URL(`${TEST_URL}/sse`)),
-        );
-
-        await delay(1000); // Wait longer for connection
-
-        // List available tools
-        const toolsResponse = await externalClient.listTools();
-        assertExists(toolsResponse.tools);
-
-        // Debug: Log actual tools found
-        console.log(
-          "Tools found:",
-          toolsResponse.tools.length,
-          toolsResponse.tools.map((t) => t.name),
-        );
-
-        // Check if tools are available
-        if (toolsResponse.tools.length >= 2) {
-          const toolNames = toolsResponse.tools.map((tool) => tool.name);
-          assertEquals(toolNames.includes("echo"), true);
-          assertEquals(toolNames.includes("getCurrentTime"), true);
-
-          // Call the echo tool through the external client
-          const echoResult = await externalClient.callTool({
-            name: "echo",
-            arguments: {
-              message: "External client test",
-              repeat: 1,
-            },
-          });
-
-          assertExists(echoResult);
-          const externalContent = echoResult.content as Array<
-            { text: string }
-          >;
-          assertEquals(externalContent[0].text, "External client test");
-        } else {
-          console.log(
-            "No tools found - this might be expected behavior for separate client connections",
-          );
-          // This is actually expected in this architecture - each client registers its own tools
-          // The external client can't see tools registered by other clients
-        }
-
-        await externalClient.close();
-        await dynamicClient.close();
-      } catch (error) {
-        console.error("External client test failed:", error);
-        await dynamicClient.close();
-        throw error;
-      }
+      assertExists(result);
+      assertEquals(result.result, "Tool executed successfully");
+      await client.close();
     },
   );
 

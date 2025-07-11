@@ -9,9 +9,12 @@ import {
   type ListToolsResult,
   McpError,
   type Tool,
+  type ToolSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import type { ClientToolDefinition } from "../shared/types.ts";
+
+type ToolType = z.infer<typeof ToolSchema>;
 
 export const ToolResponseRequestSchema: z.ZodObject<{
   method: z.ZodLiteral<"proxy/tool_response">;
@@ -47,11 +50,13 @@ export const ClientToolRegistrationRequestSchema: z.ZodObject<{
   method: z.literal("client/register_tools"),
   params: z.object({
     clientId: z.string(),
-    tools: z.array(z.object({
-      name: z.string(),
-      description: z.string(),
-      inputSchema: z.record(z.unknown()),
-    })),
+    tools: z.array(
+      z.object({
+        name: z.string(),
+        description: z.string(),
+        inputSchema: z.record(z.unknown()),
+      }),
+    ),
   }),
 });
 
@@ -62,11 +67,14 @@ export class ClientExecServer {
   private clientTools: Map<string, Set<string>> = new Map(); // clientId -> tool names
   private toolToClient: Map<string, string> = new Map(); // toolName -> clientId
   private useNamespacing: boolean = false; // Enable namespacing for tool isolation
-  private pendingRequests: Map<string, {
-    resolve: (value: CallToolResult) => void;
-    reject: (reason: Error | McpError) => void;
-    timeout: number;
-  }> = new Map();
+  private pendingRequests: Map<
+    string,
+    {
+      resolve: (value: CallToolResult) => void;
+      reject: (reason: Error | McpError) => void;
+      timeout: number;
+    }
+  > = new Map();
   private requestTimeoutMs = 30000; // 30 seconds timeout
 
   constructor(server: Server, clientId: string) {
@@ -89,15 +97,56 @@ export class ClientExecServer {
     }) as unknown as ClientExecServer & Server;
   }
 
+  /**
+   * Calls a JSON-RPC method on the server.
+   */
+  private getServerRequestHandler<TReq, TRes>(
+    method: string,
+  ):
+    | ((
+      request: TReq,
+      extra?: unknown,
+    ) => Promise<TRes>)
+    | undefined {
+    // @ts-expect-error - _requestHandlers is private, but we need to access it
+    return (this.server._requestHandlers as Map<
+      string,
+      (request: TReq, extra?: unknown) => Promise<TRes>
+    >).get(method)
+      ?.bind(
+        this.server,
+      );
+  }
+
   private setupStandardHandlers() {
-    // Handle tool list requests
-    this.server.setRequestHandler(ListToolsRequestSchema, () => {
-      return { tools: Array.from(this.tools.values()) };
+    const toolListHandler = this.getServerRequestHandler<
+      ListToolsRequest,
+      ListToolsResult
+    >(
+      ListToolsRequestSchema.shape.method.value,
+    );
+    const toolCallHandler = this.getServerRequestHandler<
+      CallToolRequest,
+      CallToolResult
+    >(
+      CallToolRequestSchema.shape.method.value,
+    );
+
+    this.server.setRequestHandler(ListToolsRequestSchema, (request, _extra) => {
+      return this.listTools(
+        toolListHandler,
+        request,
+        _extra,
+      );
     });
 
     // Handle tool call requests
     this.server.setRequestHandler(CallToolRequestSchema, (request, _extra) => {
-      return this.callTool(request.params);
+      return this.callTool(
+        toolCallHandler,
+        request,
+        _extra,
+      );
     });
 
     // Handle client tool registration
@@ -197,10 +246,6 @@ export class ClientExecServer {
 
     this.clientTools.set(clientId, clientToolNames);
 
-    console.log(
-      `Client ${clientId} registered ${registeredTools.length} tools:`,
-      registeredTools,
-    );
     if (conflicts.length > 0) {
       console.warn(
         `Client ${clientId} had ${conflicts.length} tool conflicts:`,
@@ -226,10 +271,6 @@ export class ClientExecServer {
         this.toolToClient.delete(toolName); // Remove tool-to-client mapping
       }
       this.clientTools.delete(clientId);
-      console.log(
-        `Unregistered tools for client ${clientId}:`,
-        Array.from(clientToolNames),
-      );
     }
   }
 
@@ -292,10 +333,7 @@ export class ClientExecServer {
   }): { status: string } {
     const pending = this.pendingRequests.get(params.id);
     if (!pending) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        "Request not found",
-      );
+      throw new McpError(ErrorCode.InvalidRequest, "Request not found");
     }
 
     // Clear timeout and pending request
@@ -333,31 +371,43 @@ export class ClientExecServer {
   /**
    * List all tools
    */
-  listTools(
-    _params?: ListToolsRequest["params"],
-    _options?: unknown,
+  async listTools(
+    toolListHandler:
+      | ((
+        request: ListToolsRequest,
+        extra?: unknown,
+      ) => Promise<ListToolsResult>)
+      | undefined,
+    request: ListToolsRequest,
+    extra: unknown,
   ): Promise<ListToolsResult> {
+    // Server predefined tools
+    const { tools: serverTools } = (await toolListHandler?.(request, extra)) ??
+      ({ tools: [] } as {
+        tools: ToolType[];
+      });
     const toolList = Array.from(this.tools.values());
-    return Promise.resolve({ tools: toolList });
+    return Promise.resolve({ tools: toolList.concat(serverTools) });
   }
 
   /**
    * Call tool
    */
   async callTool(
-    params: CallToolRequest["params"],
-    _resultSchema?: unknown,
-    _options?: unknown,
+    toolCallHandler:
+      | ((request: CallToolRequest, extra?: unknown) => Promise<CallToolResult>)
+      | undefined,
+    request: CallToolRequest,
+    extra?: unknown,
   ): Promise<CallToolResult> {
-    const { name, arguments: args } = params;
-
+    const { name, arguments: args } = request.params;
     // Check if tool exists
     const tool = this.tools.get(name);
     if (!tool) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        `Tool ${name} not found`,
-      );
+      if (!toolCallHandler) {
+        throw new McpError(ErrorCode.InvalidRequest, "Tool not found");
+      }
+      return toolCallHandler?.(request, extra);
     }
 
     const requestId = crypto.randomUUID();
@@ -445,12 +495,7 @@ export class ClientExecServer {
     // Clean up all pending requests
     for (const [_requestId, pending] of this.pendingRequests) {
       clearTimeout(pending.timeout);
-      pending.reject(
-        new McpError(
-          ErrorCode.InternalError,
-          "Server shutdown",
-        ),
-      );
+      pending.reject(new McpError(ErrorCode.InternalError, "Server shutdown"));
     }
     this.pendingRequests.clear();
   }

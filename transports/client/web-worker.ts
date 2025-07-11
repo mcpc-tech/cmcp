@@ -56,7 +56,7 @@ export class WorkerTransport implements Transport {
 }
 
 export function createClientExecWorkerTransport(
-  worker: Worker
+  worker: Worker,
 ): WorkerTransport {
   globalThis.addEventListener("beforeunload", () => {
     console.log("Terminating the shared worker instance...");

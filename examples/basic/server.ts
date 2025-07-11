@@ -1,3 +1,10 @@
+import {
+  CallToolRequestSchema,
+  ErrorCode,
+  ListToolsRequestSchema,
+  McpError,
+  ToolSchema,
+} from "@modelcontextprotocol/sdk/types.js";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { cors } from "npm:hono/cors";
 import { messageHandler } from "./controller/messages.controller.ts";
@@ -7,15 +14,39 @@ import process from "node:process";
 import { sseHandler } from "./controller/sse.controller.ts";
 
 export const createMCPServer = () => {
-  const server = createClientExecServer(
-    new Server({
+  const server = new Server(
+    {
       name: "dynamic-mcp-server",
       version: "0.1.0",
-    }, { capabilities: { tools: {} } }),
-    "dynamic-server",
+    },
+    { capabilities: { tools: {} } },
   );
 
-  return Promise.resolve(server);
+  server.setRequestHandler(ListToolsRequestSchema, () => {
+    return {
+      tools: [
+        ToolSchema.parse({
+          name: "example-tool",
+          description: "An example tool",
+          inputSchema: {},
+        }),
+      ],
+    };
+  });
+
+  server.setRequestHandler(CallToolRequestSchema, (request, _extra) => {
+    if (request.params.name === "example-tool") {
+      return {
+        success: true,
+        result: "Tool executed successfully",
+      };
+    }
+    throw new McpError(ErrorCode.InvalidRequest, "Tool not found");
+  });
+
+  return Promise.resolve(
+    createClientExecServer(server, "dynamic-server-with-tools"),
+  );
 };
 
 export const createApp = () => {

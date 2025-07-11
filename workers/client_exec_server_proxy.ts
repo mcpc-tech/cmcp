@@ -1,6 +1,6 @@
 import {
-  createClientExecServer,
   type ClientExecServer,
+  createClientExecServer,
 } from "../decorators/client_exec_server.ts";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { WorkerServerTransport } from "../transports/server/web-worker.ts";
@@ -14,9 +14,9 @@ export const runClientExecServerWoker: () => Promise<
         name: "cmcp-server",
         version: "0.1.0",
       },
-      { capabilities: { tools: {} } }
+      { capabilities: { tools: {} } },
     ),
-    "cmcp-server"
+    "cmcp-server",
   );
   await server.connect(new WorkerServerTransport());
   return server;
