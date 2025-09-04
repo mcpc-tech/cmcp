@@ -32,7 +32,7 @@
   },
   "imports": {
     "@hono/zod-openapi": "npm:@hono/zod-openapi@^0.19.9",
-    "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.15.0",
+    "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.17.5",
     "@std/assert": "jsr:@std/assert@^1.0.13",
     "@std/http": "jsr:@std/http@^1.0.19",
     "zod": "npm:zod@^3.25.74"
