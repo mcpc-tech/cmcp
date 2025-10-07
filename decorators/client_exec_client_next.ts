@@ -5,7 +5,6 @@ import type {
 } from "@modelcontextprotocol/sdk/shared/transport.js";
 import {
   CallToolRequestSchema,
-  type CallToolResultSchema,
   isJSONRPCRequest,
   isJSONRPCResponse,
   type JSONRPCMessage,
@@ -120,11 +119,11 @@ export class ToolAugmentingClient {
           message.params!.arguments as Record<string, unknown>,
         );
         return Promise.resolve(resultOrPromise).then(
-          (result: z.infer<typeof CallToolResultSchema>) => {
+          (result) => {
             originalOnMessage?.({
               id: message.id,
               jsonrpc: "2.0",
-              result,
+              result: result as Record<string, unknown>,
             });
           },
         );

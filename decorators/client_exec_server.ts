@@ -60,6 +60,31 @@ export const ClientToolRegistrationRequestSchema: z.ZodObject<{
   }),
 });
 
+/**
+ * Server-side decorator that enables MCP servers to execute client-registered tools.
+ *
+ * This class wraps an MCP server and extends it with the capability to:
+ * - Accept tool registrations from connected clients
+ * - Route tool execution requests to the appropriate client
+ * - Handle tool execution responses and timeout management
+ * - Provide tool namespacing to avoid conflicts between clients
+ *
+ * The ClientExecServer acts as a proxy, maintaining a registry of tools provided by
+ * different clients and routing execution requests appropriately. It seamlessly
+ * integrates with the standard MCP protocol while adding remote tool execution capabilities.
+ *
+ * @example
+ * ```typescript
+ * import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+ * import { ClientExecServer } from "./client_exec_server.ts";
+ *
+ * const server = new Server({ name: "my-server", version: "1.0.0" });
+ * const clientExecServer = new ClientExecServer(server, "main-client");
+ *
+ * // The server now automatically handles client tool registrations
+ * // and can execute tools registered by connected clients
+ * ```
+ */
 export class ClientExecServer {
   private server: Server;
   private clientId: string;
@@ -478,6 +503,31 @@ export class ClientExecServer {
   }
 }
 
+/**
+ * Creates a new ClientExecServer instance that decorates an MCP server with client tool execution capabilities.
+ *
+ * This factory function creates a ClientExecServer that acts as a transparent proxy to the original
+ * MCP server while adding the ability to register and execute tools from connected clients.
+ * The returned object can be used as a drop-in replacement for the original server.
+ *
+ * @param server - The MCP server instance to decorate with client execution capabilities
+ * @param clientId - Unique identifier for this server instance (used for tool namespacing)
+ * @returns A decorated server that supports both local and remote client tool execution
+ *
+ * @example
+ * ```typescript
+ * import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+ * import { createClientExecServer } from "./client_exec_server.ts";
+ *
+ * const server = new Server({ name: "enhanced-server", version: "1.0.0" });
+ * const enhancedServer = createClientExecServer(server, "main-server");
+ *
+ * // Use exactly like a regular MCP server, but with client tool support
+ * enhancedServer.setRequestHandler(ListToolsRequestSchema, async () => {
+ *   // This will now include both server and client-registered tools
+ * });
+ * ```
+ */
 export function createClientExecServer(
   server: Server,
   clientId: string,

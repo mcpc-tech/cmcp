@@ -22,6 +22,44 @@ const ClientToolRegistrationResultSchema = z.object({
   conflicts: z.array(z.string()).optional(),
 });
 
+/**
+ * Client-side decorator that enables MCP clients to register and execute tools on remote servers.
+ *
+ * This class wraps an MCP client and extends it with the capability to:
+ * - Register local tool implementations with a remote server
+ * - Handle execution requests for registered tools from the server
+ * - Automatically manage the registration process during connection
+ * - Provide status information about registered tools
+ *
+ * The ClientExecClient acts as a bridge between local tool implementations and remote
+ * MCP servers, allowing distributed tool execution across the MCP protocol.
+ *
+ * @example
+ * ```typescript
+ * import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+ * import { ClientExecClient } from "./client_exec_client.ts";
+ *
+ * const client = new Client({ name: "tool-provider", version: "1.0.0" });
+ * const toolClient = new ClientExecClient(client, "unique-client-id");
+ *
+ * // Register tools that the server can execute
+ * toolClient.registerTools([
+ *   {
+ *     name: "file_read",
+ *     description: "Read file contents",
+ *     inputSchema: {
+ *       type: "object",
+ *       properties: { path: { type: "string" } },
+ *       required: ["path"]
+ *     },
+ *     implementation: async (args) => {
+ *       const content = await Deno.readTextFile(args.path);
+ *       return { content };
+ *     }
+ *   }
+ * ]);
+ * ```
+ */
 export class ClientExecClient {
   private client: Client;
   private clientId: string;
@@ -187,6 +225,48 @@ export class ClientExecClient {
   }
 }
 
+/**
+ * Creates a new ClientExecClient instance that decorates an MCP client with tool registration capabilities.
+ *
+ * This factory function creates a ClientExecClient that acts as a transparent proxy to the original
+ * MCP client while adding the ability to register local tools with remote servers and handle
+ * execution requests. The returned object can be used as a drop-in replacement for the original client.
+ *
+ * @param client - The MCP client instance to decorate with tool registration capabilities
+ * @param clientId - Unique identifier for this client (must be unique across all clients connecting to the same server)
+ * @returns A decorated client that can register tools with servers and handle remote execution requests
+ *
+ * @example
+ * ```typescript
+ * import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+ * import { createClientExecClient } from "./client_exec_client.ts";
+ * import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+ *
+ * const client = new Client({ name: "my-tool-client", version: "1.0.0" });
+ * const toolClient = createClientExecClient(client, "tool-provider-1");
+ *
+ * // Register tools before connecting
+ * toolClient.registerTools([
+ *   {
+ *     name: "calculate",
+ *     description: "Perform calculations",
+ *     inputSchema: {
+ *       type: "object",
+ *       properties: { expression: { type: "string" } },
+ *       required: ["expression"]
+ *     },
+ *     implementation: async (args) => ({ result: eval(args.expression) })
+ *   }
+ * ]);
+ *
+ * // Connect and tools will be automatically registered
+ * const transport = new StdioClientTransport({
+ *   command: "server-executable",
+ *   args: []
+ * });
+ * await toolClient.connect(transport);
+ * ```
+ */
 export function createClientExecClient(
   client: Client,
   clientId: string,

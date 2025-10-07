@@ -1,6 +1,7 @@
 # Client-Tool-Execution MCP Server 🚀
 
 [![JSR](https://jsr.io/badges/@mcpc/cmcp)](https://jsr.io/@mcpc/cmcp)
+[![npm](https://img.shields.io/npm/v/@mcpc-tech/cmcp)](https://www.npmjs.com/package/@mcpc-tech/cmcp)
 
 > Truly Useful Anti-Patterns: Client-Tool-Execution MCP Server
 
@@ -28,23 +29,12 @@ This enables you to:
 ### Installation
 
 ```bash
-# Using Deno (recommended)
-import { createClientExecServer, createClientExecClient } from "jsr:@mcpc/cmcp";
+# Using Node (better compaitity)
+npm i @mcpc-tech/cmcp
 
-# Or add to your deno.json
-{
-  "imports": {
-    "@mcpc/cmcp": "jsr:@mcpc/cmcp@^0.0.2"
-  }
-}
+# Using Deno
+deno add jsr:@mcpc/cmcp
 ```
-
-### Basic Setup
-
-1. **Install the package**: Add `@mcpc/cmcp` to your project
-2. **Start the server demo**:
-   `deno run --allow-net --allow-read --allow-env server.ts`
-3. **Run the client demo**: `deno run --allow-net client.ts`
 
 ### Complete Example
 

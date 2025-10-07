@@ -1,31 +1,22 @@
-import type {
-  CallToolResultSchema,
-  Tool,
-} from "@modelcontextprotocol/sdk/types.js";
-import type z from "zod";
+import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 
 /**
- * Defines the structure for a tool that can be executed on the client.
- * It extends the base 'Tool' type and adds the client-side implementation.
+ * Tool definition with implementation function.
+ * Extends the base MCP Tool type with an execution handler.
  */
-export interface ClientToolDefinition<
-  TArgs extends Record<string, unknown> = Record<string, unknown>,
-  TResult = z.infer<typeof CallToolResultSchema>,
-> extends Tool {
-  implementation: (args: TArgs) => Promise<TResult> | TResult;
+export interface ClientToolDefinition extends Tool {
+  /**
+   * Function to execute when this tool is called.
+   * @param args - Tool arguments as defined in inputSchema
+   * @returns Tool execution result
+   */
+  implementation: (args: Record<string, unknown>) => Promise<unknown> | unknown;
 }
 
 // --- Protocol Message Types ---
-// (The rest of the file remains the same)
 
-// Base message structure
-interface MessageBase {
-  type: string;
-  payload: unknown;
-}
-
-// Client -> Worker Messages (C2W)
-export interface C2W_RegisterToolsMessage extends MessageBase {
+// Client -> Worker Messages
+export interface RegisterToolsMessage {
   type: "c2w/register_tools";
   payload: {
     clientId: string;
@@ -33,7 +24,7 @@ export interface C2W_RegisterToolsMessage extends MessageBase {
   };
 }
 
-export interface C2W_ToolResponseMessage extends MessageBase {
+export interface ToolResponseMessage {
   type: "c2w/tool_response";
   payload: {
     requestId: string;
@@ -43,7 +34,7 @@ export interface C2W_ToolResponseMessage extends MessageBase {
   };
 }
 
-export interface C2W_UnregisterMessage extends MessageBase {
+export interface UnregisterMessage {
   type: "c2w/unregister";
   payload: {
     clientId: string;
@@ -51,12 +42,12 @@ export interface C2W_UnregisterMessage extends MessageBase {
 }
 
 export type ClientToWorkerMessage =
-  | C2W_RegisterToolsMessage
-  | C2W_ToolResponseMessage
-  | C2W_UnregisterMessage;
+  | RegisterToolsMessage
+  | ToolResponseMessage
+  | UnregisterMessage;
 
-// Worker -> Client Messages (W2C)
-export interface W2C_ExecuteToolMessage extends MessageBase {
+// Worker -> Client Messages
+export interface ExecuteToolMessage {
   type: "w2c/execute_tool";
   payload: {
     requestId: string;
@@ -65,4 +56,4 @@ export interface W2C_ExecuteToolMessage extends MessageBase {
   };
 }
 
-export type WorkerToClientMessage = W2C_ExecuteToolMessage;
+export type WorkerToClientMessage = ExecuteToolMessage;
