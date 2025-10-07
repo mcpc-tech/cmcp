@@ -2,7 +2,7 @@
   "packages": [
     {
       "name": "@mcpc/cmcp",
-      "version": "0.0.4",
+      "version": "latest",
       "packageJson": {
         "name": "@mcpc-tech/cmcp"
       }
