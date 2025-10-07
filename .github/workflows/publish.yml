@@ -1,4 +1,4 @@
-name: Publish to npm
+name: Publish to JSR and npm
 
 on:
   push:
@@ -32,6 +32,9 @@ jobs:
 
       - name: Type check
         run: deno task build
+
+      - name: Publish to JSR
+        run: deno publish
 
       - name: Run JSR to NPM conversion
         run: deno run -A https://raw.githubusercontent.com/yaonyan/jsr2npm/main/cli.ts
