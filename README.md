@@ -157,8 +157,8 @@ console.log(result); // "Clicked element: #my-button"
 // ✨ The actual DOM manipulation happened on the CLIENT side!
 ```
 
-> Want more ready-made client tools? Find many example tool definitions at the AI Tools Registry: https://ai-tools-registry.vercel.app/
-
+> Want more ready-made client tools? Find many example tool definitions at the
+> AI Tools Registry: https://ai-tools-registry.vercel.app/
 
 ## Why Client-Side Execution? 🤔
 
