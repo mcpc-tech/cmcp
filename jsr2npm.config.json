@@ -2,10 +2,7 @@
   "packages": [
     {
       "name": "@mcpc/cmcp",
-      "version": "0.0.3-beta-1",
-      "bin": {
-        "mcpc": "src/bin.ts"
-      },
+      "version": "0.0.3-beta-2",
       "packageJson": {
         "name": "@mcpc-tech/cmcp"
       }
