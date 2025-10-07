@@ -4,7 +4,11 @@
       "name": "@mcpc/cmcp",
       "version": "0.0.3-beta-2",
       "packageJson": {
-        "name": "@mcpc-tech/cmcp"
+        "name": "@mcpc-tech/cmcp",
+        "repository": {
+          "type": "git",
+          "url": "git+https://github.com/mcpc-tech/cmcp.git"
+        }
       }
     }
   ]
