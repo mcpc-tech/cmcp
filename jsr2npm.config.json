@@ -2,7 +2,7 @@
   "packages": [
     {
       "name": "@mcpc/cmcp",
-      "version": "0.0.3-beta-2",
+      "version": "0.0.3-beta-3",
       "packageJson": {
         "name": "@mcpc-tech/cmcp",
         "repository": {
