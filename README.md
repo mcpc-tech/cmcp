@@ -29,7 +29,7 @@ This enables you to:
 ### Installation
 
 ```bash
-# Using Node (better compaitity)
+# Using Node (better compatibility)
 npm i @mcpc-tech/cmcp
 
 # Using Deno

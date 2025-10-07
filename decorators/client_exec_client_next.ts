@@ -33,6 +33,17 @@ const ClientToolRegistrationResultSchema = z.object({
   conflicts: z.array(z.string()).optional(),
 });
 
+/**
+ * Client decorator that augments a Client with tool registration and interception.
+ *
+ * This class wraps an MCP client and:
+ * - Stores local tool implementations
+ * - Intercepts incoming tool lists and appends local tool definitions
+ * - Intercepts outgoing tool calls and executes local implementations when present
+ *
+ * Use this when you want to augment an existing Client with the ability to
+ * provide tools to remote callers without modifying the original Client API.
+ */
 export class ToolAugmentingClient {
   private client: Client;
   private clientId: string;
@@ -274,6 +285,13 @@ export class ToolAugmentingClient {
   }
 }
 
+/**
+ * Create a ToolAugmentingClient wrapper around an existing MCP client.
+ *
+ * @param client - Original MCP Client instance to wrap
+ * @param clientId - Unique identifier for this client (used when registering tools)
+ * @returns A client instance augmented with tool registration capabilities
+ */
 export function createToolAugmentingClient(
   client: Client,
   clientId: string,
