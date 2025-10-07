@@ -153,7 +153,7 @@ export class ToolAugmentingClient {
           options,
           originalSend,
           originalOnMessage,
-        )
+        ),
       );
     };
 

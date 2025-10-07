@@ -1,0 +1,14 @@
+{
+  "packages": [
+    {
+      "name": "@mcpc/cmcp",
+      "version": "0.0.3-beta-1",
+      "bin": {
+        "mcpc": "src/bin.ts"
+      },
+      "packageJson": {
+        "name": "@mcpc-tech/cmcp"
+      }
+    }
+  ]
+}
