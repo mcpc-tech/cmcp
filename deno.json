@@ -37,6 +37,9 @@
     "@std/http": "jsr:@std/http@^1.0.19",
     "zod": "npm:zod@^3.25.74"
   },
+  "lint": {
+    "exclude": ["examples/"]
+  },
   "publish": {
     "exclude": [
       "*.lock",
