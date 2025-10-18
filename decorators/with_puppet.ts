@@ -136,22 +136,10 @@ export function withPuppet<T extends Transport>(
     return transport;
   }
 
-  // Create proxy that forwards all properties
-  return new Proxy(transport, {
-    get(target, prop) {
-      // Add puppet methods
-      if (prop === "bindPuppet") return bindPuppet;
-      if (prop === "unbindPuppet") return unbindPuppet;
-      if (prop === "unwrap") return unwrap;
-
-      // Forward everything else to original transport
-      const value = target[prop as keyof T];
-      return typeof value === "function" ? value.bind(target) : value;
-    },
-
-    set(target, prop, value) {
-      Reflect.set(target, prop, value);
-      return true;
-    },
+  // Simply add methods to the transport object
+  return Object.assign(transport, {
+    bindPuppet,
+    unbindPuppet,
+    unwrap,
   }) as PuppetTransport<T> & T;
 }

@@ -45,7 +45,7 @@ export async function handleConnecting(
     if (transport) {
       return transport.sseResponse;
     }
-    return new Response("Invalid or expired sessionId", { status: 404 });
+    // return new Response("Invalid or expired sessionId", { status: 404 });
   }
 
   // Create new session
