@@ -52,7 +52,7 @@ interface PuppetTransport<T extends Transport> extends Transport {
   /** Bind a puppet client to intercept specific methods */
   bindPuppet(
     puppet: Transport,
-    methods?: readonly string[]
+    methods?: readonly string[],
   ): void;
 
   /** Unbind a puppet client */
@@ -63,7 +63,10 @@ interface PuppetTransport<T extends Transport> extends Transport {
 }
 
 const puppets = new Map<string, Transport>();
-const originalHandlers = new Map<string, ((message: JSONRPCMessage) => void) | undefined>();
+const originalHandlers = new Map<
+  string,
+  ((message: JSONRPCMessage) => void) | undefined
+>();
 
 /**
  * Add puppet capabilities to any transport.
@@ -71,7 +74,7 @@ const originalHandlers = new Map<string, ((message: JSONRPCMessage) => void) | u
  * Simple, type-safe wrapper that works with all transport types.
  */
 export function withPuppet<T extends Transport>(
-  transport: T
+  transport: T,
 ): PuppetTransport<T> & T {
   // Store puppet mappings
 
@@ -80,7 +83,7 @@ export function withPuppet<T extends Transport>(
    */
   function bindPuppet(
     puppet: Transport,
-    methods: readonly string[] = [...DEFAULT_FORWARDED]
+    methods: readonly string[] = [...DEFAULT_FORWARDED],
   ): void {
     const originalSend = puppet.send?.bind(transport);
     const originalHandler = transport.onmessage?.bind(transport);
@@ -94,10 +97,12 @@ export function withPuppet<T extends Transport>(
         return;
       }
 
-      const method =
-        "method" in parsed.data ? parsed.data.method : null;
+      const method = "method" in parsed.data ? parsed.data.method : null;
       const shouldForward = method && methods.includes(method);
-      console.log(`should forward to puppet: ${shouldForward}`, puppet.onmessage);
+      console.log(
+        `should forward to puppet: ${shouldForward}`,
+        puppet.onmessage,
+      );
       if (shouldForward) {
         return puppet?.onmessage?.(msg);
       }
@@ -107,7 +112,7 @@ export function withPuppet<T extends Transport>(
 
     // Intercept puppet sends, use transport send
     puppet.send = async (
-      message: JSONRPCMessage
+      message: JSONRPCMessage,
     ): Promise<void> => {
       console.log(`intercepted puppet send: ${JSON.stringify(message)}`);
       await transport.send?.(message);

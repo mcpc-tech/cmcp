@@ -33,7 +33,7 @@ const transportManager = new Map<string, SSEServerTransport>();
 export async function handleConnecting(
   request: Request,
   createMCPServer: () => Promise<SupportedServer>,
-  incomingMsgRoutePath: string
+  incomingMsgRoutePath: string,
 ): Promise<Response> {
   const url = new URL(request.url);
   const sessionId = url.searchParams.get("sessionId");
@@ -50,7 +50,7 @@ export async function handleConnecting(
 
   // Create new session
   const transport = withPuppet(
-    new SSEServerTransport(incomingMsgRoutePath, sessionId ?? undefined)
+    new SSEServerTransport(incomingMsgRoutePath, sessionId ?? undefined),
   );
   const puppetTransport = puppetId ? transportManager.get(puppetId) : undefined;
   transportManager.set(transport.sessionId, transport);
@@ -73,7 +73,7 @@ export async function handleConnecting(
       if (puppetTransport) {
         console.log(
           `Binding puppet ${puppetId} transport for session ${transport.sessionId}
-This forward calls to puppet transport and receive messages from it.`
+This forward calls to puppet transport and receive messages from it.`,
         );
         transport.bindPuppet(puppetTransport);
       }
@@ -81,7 +81,7 @@ This forward calls to puppet transport and receive messages from it.`
   });
 
   console.log(
-    `Created new SSE transport with sessionId: ${transport.sessionId}`
+    `Created new SSE transport with sessionId: ${transport.sessionId}`,
   );
 
   return transport.sseResponse;
@@ -158,7 +158,7 @@ export class SSEServerTransport implements Transport {
       cancel: (reason) => {
         console.log(
           `SSE stream cancelled with sessionId: ${this.#sessionId}`,
-          reason
+          reason,
         );
         this.#cleanup();
       },
@@ -180,7 +180,7 @@ export class SSEServerTransport implements Transport {
   start(): Promise<void> {
     if (this.#sseResponse) {
       throw new Error(
-        "SSEServerTransport already started! If using Server class, note that connect() calls start() automatically."
+        "SSEServerTransport already started! If using Server class, note that connect() calls start() automatically.",
       );
     }
 
@@ -225,8 +225,9 @@ export class SSEServerTransport implements Transport {
       return new Response("Accepted", { status: 202 });
     } catch (error) {
       console.log(error);
-      const errorObj =
-        error instanceof Error ? error : new Error(String(error));
+      const errorObj = error instanceof Error
+        ? error
+        : new Error(String(error));
       this.onerror?.(errorObj);
       return new Response(String(error), { status: 400 });
     }
@@ -241,8 +242,9 @@ export class SSEServerTransport implements Transport {
       this.onmessage?.(parsedMessage);
       return Promise.resolve();
     } catch (error) {
-      const errorObj =
-        error instanceof Error ? error : new Error(String(error));
+      const errorObj = error instanceof Error
+        ? error
+        : new Error(String(error));
       this.onerror?.(errorObj);
       return Promise.reject(error);
     }
