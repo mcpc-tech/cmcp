@@ -36,7 +36,7 @@ export const createMCPServer = () => {
   server.setRequestHandler(CallToolRequestSchema, (request, _extra) => {
     if (request.params.name === "example-tool") {
       return {
-        content: [{ type: "text", text: "This is an example tool response" }],
+        content: [{ type: "text", text: "This is an example tool response 1" }],
       };
     }
     throw new McpError(ErrorCode.InvalidRequest, "Tool not found");
@@ -78,7 +78,7 @@ export const createApp = () => {
 const app = createApp();
 
 const port = Number(process.env.PORT || 9000);
-const hostname = "localhost";
+const hostname = "0.0.0.0";
 
 console.log(`Starting server on http://${hostname}:${port}`);
 Deno.serve({ port, hostname }, app.fetch);

@@ -8,10 +8,7 @@ export {
   createClientExecClient,
 } from "./decorators/client_exec_client.ts";
 
-export {
-  createToolAugmentingClient,
-  ToolAugmentingClient,
-} from "./decorators/client_exec_client_next.ts";
+export { withPuppet, PUPPET_METHODS } from "./decorators/with_puppet.ts";
 
 export { type ClientToolDefinition } from "./shared/types.ts";
 

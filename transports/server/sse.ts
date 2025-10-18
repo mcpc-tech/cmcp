@@ -9,12 +9,16 @@
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
+  CallToolRequestSchema,
+  ErrorCode,
   type JSONRPCMessage,
   JSONRPCMessageSchema,
+  McpError,
 } from "@modelcontextprotocol/sdk/types.js";
 import { ServerSentEventStream } from "@std/http/server-sent-event-stream";
 import type { ClientExecServer } from "../../decorators/client_exec_server.ts";
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { withPuppet } from "../../decorators/with_puppet.ts";
 
 type SupportedServer = McpServer | (ClientExecServer & Server) | Server;
 
@@ -29,10 +33,11 @@ const transportManager = new Map<string, SSEServerTransport>();
 export async function handleConnecting(
   request: Request,
   createMCPServer: () => Promise<SupportedServer>,
-  incomingMsgRoutePath: string,
+  incomingMsgRoutePath: string
 ): Promise<Response> {
   const url = new URL(request.url);
   const sessionId = url.searchParams.get("sessionId");
+  const puppetId = url.searchParams.get("puppetId");
 
   // Return existing session if valid sessionId provided
   if (sessionId) {
@@ -44,12 +49,39 @@ export async function handleConnecting(
   }
 
   // Create new session
-  const transport = new SSEServerTransport(incomingMsgRoutePath);
+  const transport = withPuppet(
+    new SSEServerTransport(incomingMsgRoutePath, sessionId ?? undefined)
+  );
+  const puppetTransport = puppetId ? transportManager.get(puppetId) : undefined;
   transportManager.set(transport.sessionId, transport);
-  await createMCPServer().then((srv) => srv.connect(transport));
+
+  await createMCPServer().then((srv: SupportedServer) => {
+    if (puppetTransport && "setRequestHandler" in srv) {
+      srv.setRequestHandler(CallToolRequestSchema, (request, _extra) => {
+        if (request.params.name === "example-tool") {
+          return {
+            content: [
+              { type: "text", text: "This is an example tool response 2" },
+            ],
+          };
+        }
+        throw new McpError(ErrorCode.InvalidRequest, "Tool not found");
+      });
+    }
+
+    srv.connect(transport).then(() => {
+      if (puppetTransport) {
+        console.log(
+          `Binding puppet ${puppetId} transport for session ${transport.sessionId}
+This forward calls to puppet transport and receive messages from it.`
+        );
+        transport.bindPuppet(puppetTransport);
+      }
+    });
+  });
 
   console.log(
-    `Created new SSE transport with sessionId: ${transport.sessionId}`,
+    `Created new SSE transport with sessionId: ${transport.sessionId}`
   );
 
   return transport.sseResponse;
@@ -112,9 +144,9 @@ export class SSEServerTransport implements Transport {
   /**
    * Creates a new SSE server transport, which will direct the client to POST messages to the relative or absolute URL identified by `endpoint`.
    */
-  constructor(endpoint: string) {
+  constructor(endpoint: string, sessionId?: string) {
     this.#endpoint = endpoint;
-    this.#sessionId = crypto.randomUUID();
+    this.#sessionId = sessionId || crypto.randomUUID();
     this.#stream = this.#createStream();
   }
 
@@ -126,7 +158,7 @@ export class SSEServerTransport implements Transport {
       cancel: (reason) => {
         console.log(
           `SSE stream cancelled with sessionId: ${this.#sessionId}`,
-          reason,
+          reason
         );
         this.#cleanup();
       },
@@ -148,7 +180,7 @@ export class SSEServerTransport implements Transport {
   start(): Promise<void> {
     if (this.#sseResponse) {
       throw new Error(
-        "SSEServerTransport already started! If using Server class, note that connect() calls start() automatically.",
+        "SSEServerTransport already started! If using Server class, note that connect() calls start() automatically."
       );
     }
 
@@ -193,9 +225,8 @@ export class SSEServerTransport implements Transport {
       return new Response("Accepted", { status: 202 });
     } catch (error) {
       console.log(error);
-      const errorObj = error instanceof Error
-        ? error
-        : new Error(String(error));
+      const errorObj =
+        error instanceof Error ? error : new Error(String(error));
       this.onerror?.(errorObj);
       return new Response(String(error), { status: 400 });
     }
@@ -210,9 +241,8 @@ export class SSEServerTransport implements Transport {
       this.onmessage?.(parsedMessage);
       return Promise.resolve();
     } catch (error) {
-      const errorObj = error instanceof Error
-        ? error
-        : new Error(String(error));
+      const errorObj =
+        error instanceof Error ? error : new Error(String(error));
       this.onerror?.(errorObj);
       return Promise.reject(error);
     }
