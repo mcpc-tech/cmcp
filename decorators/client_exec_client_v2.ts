@@ -266,7 +266,7 @@ export function createClientExecClient(
   clientId: string,
 ): ClientExecClient & Client {
   const execClient = new ClientExecClient(client, clientId);
-  
+
   // Simply assign all methods - no Proxy needed!
   return Object.assign(execClient, client) as ClientExecClient & Client;
 }

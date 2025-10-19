@@ -1,6 +1,8 @@
 export {
   ClientExecServer,
   createClientExecServer,
+  ClientToolResponseRequestSchema,
+  ClientToolRegistrationRequestSchema,
 } from "./decorators/client_exec_server.ts";
 
 export {

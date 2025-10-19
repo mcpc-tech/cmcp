@@ -16,7 +16,7 @@ import type { ClientToolDefinition } from "../shared/types.ts";
 
 type ToolType = z.infer<typeof ToolSchema>;
 
-export const ToolResponseRequestSchema: z.ZodObject<{
+export const ClientToolResponseRequestSchema: z.ZodObject<{
   method: z.ZodLiteral<"proxy/tool_response">;
   params: z.ZodObject<{
     id: z.ZodString;
@@ -182,7 +182,7 @@ export class ClientExecServer {
 
     // Handle client tool execution responses
     this.server.setRequestHandler(
-      ToolResponseRequestSchema,
+      ClientToolResponseRequestSchema,
       (request) => this.handleClientResponse(request.params),
     );
   }
