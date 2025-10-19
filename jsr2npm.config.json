@@ -3,6 +3,7 @@
     {
       "name": "@mcpc/cmcp",
       "version": "latest",
+      "browser": true,
       "packageJson": {
         "name": "@mcpc-tech/cmcp"
       }
