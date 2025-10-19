@@ -112,7 +112,7 @@ export function bindPuppet<T extends Transport>(
     // Intercept main transport's onmessage to forward matching methods to puppet
     transport.onmessage = (msg: JSONRPCMessage) => {
       console.error(
-        `[Puppet] Intercepted transport onmessage: ${JSON.stringify(msg)}`,
+        `[puppet] intercepted transport onmessage: ${JSON.stringify(msg)}`,
       );
       const parsed = JSONRPCMessageSchema.safeParse(msg);
       if (!parsed.success) {
@@ -123,8 +123,7 @@ export function bindPuppet<T extends Transport>(
       const method = "method" in parsed.data ? parsed.data.method : null;
       const shouldForward = method && methods.includes(method);
       console.error(
-        `[Puppet] Should forward to puppet=${shouldForward}, method=${method}`,
-        puppet.onmessage,
+        `[puppet] should forward to puppet=${shouldForward}, method=${method}`,
       );
       if (shouldForward) {
         return puppet?.onmessage?.(msg);
@@ -136,7 +135,7 @@ export function bindPuppet<T extends Transport>(
     // Intercept puppet's send to use main transport's connection
     puppet.send = async (message: JSONRPCMessage): Promise<void> => {
       console.error(
-        `[Puppet] Intercepted puppet send: ${JSON.stringify(message)}`,
+        `[puppet] intercepted puppet send: ${JSON.stringify(message)}`,
       );
       await transport.send?.(message);
       await originalPuppetSend?.(message);
@@ -151,11 +150,11 @@ export function bindPuppet<T extends Transport>(
    */
   function unbindPuppet(): void {
     if (!boundPuppet) {
-      console.error("[Puppet] No puppet bound, nothing to unbind");
+      console.error("[puppet] no puppet bound, nothing to unbind");
       return;
     }
 
-    console.error("[Puppet] Unbinding puppet and restoring original handlers");
+    console.error("[puppet] unbinding puppet and restoring original handlers");
 
     // Restore transport's original onmessage handler
     if (originalTransportHandler) {
@@ -189,7 +188,7 @@ export function bindPuppet<T extends Transport>(
       // Apply puppet binding after connection is ready
       if (puppet) {
         console.error(
-          "[Puppet] Applying puppet binding after connection established",
+          `[puppet] applying puppet binding after connection established, controler: ${transport.sessionId}, puppet: ${puppet.sessionId}`,
         );
         applyPuppetBinding(puppet, methods);
       }
