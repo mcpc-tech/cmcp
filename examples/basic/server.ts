@@ -74,11 +74,13 @@ export const createApp = () => {
   return app;
 };
 
-// Main server startup
-const app = createApp();
+// Main server startup - only start if this file is the main module
+if (import.meta.main) {
+  const app = createApp();
 
-const port = Number(process.env.PORT || 9000);
-const hostname = "0.0.0.0";
+  const port = Number(process.env.PORT || 9000);
+  const hostname = "0.0.0.0";
 
-console.log(`Starting server on http://${hostname}:${port}`);
-Deno.serve({ port, hostname }, app.fetch);
+  console.log(`Starting server on http://${hostname}:${port}`);
+  Deno.serve({ port, hostname }, app.fetch);
+}

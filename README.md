@@ -3,7 +3,7 @@
 [![JSR](https://jsr.io/badges/@mcpc/cmcp)](https://jsr.io/@mcpc/cmcp)
 [![npm](https://img.shields.io/npm/v/@mcpc-tech/cmcp)](https://www.npmjs.com/package/@mcpc-tech/cmcp)
 
-> Truly Useful Anti-Patterns: Client-Tool-Execution MCP Server
+> Create Client-Tool-Execution MCP Server
 
 ## Core Features 🎯
 
@@ -14,6 +14,8 @@
   environment-specific operations
 - **Transparent Proxy**: Server acts as a proxy, routing tool calls to the
   appropriate client for execution
+- **Puppet Transport**: Delegate MCP methods to another transport - for example,
+  let Cursor's AI call tools that execute in Chrome's browser environment
 
 This enables you to:
 
@@ -193,3 +195,64 @@ console.log(result); // "Clicked element: #my-button"
 
 > **Key Point**: The server never executes tools - it only routes calls to
 > clients where the actual execution happens!
+
+## Advanced: Puppet Transport 🎭
+
+`bindPuppet` connects two client transports so one client can use another
+client's tools.
+
+**Core Idea**: Bind Cursor's transport to Chrome's transport → Cursor's requests
+forward to Chrome.
+
+### Example: Cursor → Chrome
+
+```typescript
+import { bindPuppet, SSEServerTransport } from "@mcpc/cmcp";
+
+// Chrome's transport (connected to Chrome client with DOM tools)
+const chromeTransport = new SSEServerTransport("/messages", "chrome");
+
+// Cursor's transport, bound to Chrome's
+const cursorTransport = new SSEServerTransport("/messages", "cursor");
+const boundTransport = bindPuppet(
+  cursorTransport, // Main transport
+  chromeTransport, // Puppet - receives forwarded calls
+  ["tools/list", "tools/call"],
+);
+
+// Result: When Cursor calls a tool → forwards to Chrome → Chrome executes
+```
+
+**How it works:**
+
+1. 🌐 Chrome connects and registers DOM tools
+2. 💻 Cursor connects with `bindPuppet` pointing to Chrome's transport
+3. 🤖 AI calls tool via Cursor → `bindPuppet` forwards to Chrome → Chrome
+   executes
+4. ✨ Result returns through Chrome → Cursor → AI
+
+**In practice** (using `handleConnecting`):
+
+```typescript
+// Chrome: GET /sse?sessionId=chrome
+// Cursor: GET /sse?sessionId=cursor&puppetId=chrome
+// !!!NOW Cursor controls Chrome like a puppet
+```
+
+### Use Cases
+
+- **🖥️ Cursor + Chrome**: AI in your editor controls browser automation
+- **🤖 AI Agent + Multiple Browsers**: One AI coordinating tools across multiple
+  browser tabs
+- **📱 Desktop App + Mobile Client**: Desktop AI accessing mobile-specific
+  capabilities
+- **🔗 Multi-Environment Workflows**: Chain tools across different runtime
+  environments
+
+### Available Methods
+
+Methods you can delegate (from `PUPPET_METHODS`):
+
+- `tools/list`, `tools/call` - Tool operations
+- `resources/list`, `resources/read` - Resource operations
+- `prompts/list` - Prompt operations

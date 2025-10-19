@@ -18,7 +18,7 @@ import {
 import { ServerSentEventStream } from "@std/http/server-sent-event-stream";
 import type { ClientExecServer } from "../../decorators/client_exec_server.ts";
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { withPuppet } from "../../decorators/with_puppet.ts";
+import { bindPuppet } from "../../decorators/with_puppet.ts";
 
 type SupportedServer = McpServer | (ClientExecServer & Server) | Server;
 
@@ -49,36 +49,29 @@ export async function handleConnecting(
   }
 
   // Create new session
-  const transport = withPuppet(
+  const transport = bindPuppet(
     new SSEServerTransport(incomingMsgRoutePath, sessionId ?? undefined),
+    puppetId ? transportManager.get(puppetId) : undefined,
   );
-  const puppetTransport = puppetId ? transportManager.get(puppetId) : undefined;
   transportManager.set(transport.sessionId, transport);
 
-  await createMCPServer().then((srv: SupportedServer) => {
-    if (puppetTransport && "setRequestHandler" in srv) {
-      srv.setRequestHandler(CallToolRequestSchema, (request, _extra) => {
-        if (request.params.name === "example-tool") {
-          return {
-            content: [
-              { type: "text", text: "This is an example tool response 2" },
-            ],
-          };
-        }
-        throw new McpError(ErrorCode.InvalidRequest, "Tool not found");
-      });
-    }
+  const srv = await createMCPServer();
 
-    srv.connect(transport).then(() => {
-      if (puppetTransport) {
-        console.log(
-          `Binding puppet ${puppetId} transport for session ${transport.sessionId}
-This forward calls to puppet transport and receive messages from it.`,
-        );
-        transport.bindPuppet(puppetTransport);
+  if (puppetId && "setRequestHandler" in srv) {
+    // Test if server controls the puppet
+    srv.setRequestHandler(CallToolRequestSchema, (request, _extra) => {
+      if (request.params.name === "example-tool") {
+        return {
+          content: [
+            { type: "text", text: "This is an example tool response 2" },
+          ],
+        };
       }
+      throw new McpError(ErrorCode.InvalidRequest, "Tool not found");
     });
-  });
+  }
+
+  await srv.connect(transport).then();
 
   console.log(
     `Created new SSE transport with sessionId: ${transport.sessionId}`,

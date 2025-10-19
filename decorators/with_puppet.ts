@@ -1,22 +1,27 @@
 /**
  * Universal puppet capability decorator for MCP transports.
  *
- * This simple wrapper adds puppet functionality to ANY transport implementation
- * (SSE, stdio, WebSocket, or custom transports).
+ * Adds puppet (delegation) functionality to any MCP transport implementation.
+ * A puppet transport can handle specific MCP methods on behalf of the main transport,
+ * enabling scenarios like remote tool execution, resource proxying, etc.
  *
  * @example
  * ```typescript
- * // Works with SSE
- * const transport = withPuppet(new SSEServerTransport("/messages"));
+ * // Create a main SSE transport
+ * const mainTransport = new SSEServerTransport("/messages");
  *
- * // Works with stdio
- * const transport = withPuppet(new StdioServerTransport());
+ * // Get a puppet transport from another session
+ * const puppetTransport = getPuppetTransport("session-123");
  *
- * // Works with WebSocket
- * const transport = withPuppet(new WebSocketServerTransport());
+ * // Bind the puppet to handle specific methods
+ * const transport = bindPuppet(
+ *   mainTransport,
+ *   puppetTransport,
+ *   ["tools/list", "tools/call"]
+ * );
  *
- * // Bind puppet clients
- * transport.bindPuppet("session-123", puppetTransport, ["tools/list", "tools/call"]);
+ * // Now when "tools/list" or "tools/call" requests arrive,
+ * // they will be forwarded to the puppet transport
  * ```
  */
 
@@ -49,101 +54,150 @@ const DEFAULT_FORWARDED = [
  * Transport with puppet capabilities
  */
 interface PuppetTransport<T extends Transport> extends Transport {
-  /** Bind a puppet client to intercept specific methods */
-  bindPuppet(
-    puppet: Transport,
-    methods?: readonly string[],
-  ): void;
+  /** Unbind the puppet and restore original handlers */
+  unbindPuppet(): void;
 
-  /** Unbind a puppet client */
-  unbindPuppet(sessionId: string): void;
-
-  /** Get the underlying transport */
+  /** Get the original unwrapped transport */
   unwrap(): T;
 }
 
-const puppets = new Map<string, Transport>();
-const originalHandlers = new Map<
-  string,
-  ((message: JSONRPCMessage) => void) | undefined
->();
-
 /**
- * Add puppet capabilities to any transport.
+ * Add puppet capabilities to a transport.
  *
- * Simple, type-safe wrapper that works with all transport types.
+ * This function wraps a transport to enable method forwarding to a puppet transport.
+ * When the main transport receives a message matching one of the specified methods,
+ * it will be forwarded to the puppet's onmessage handler instead.
+ * Similarly, when the puppet sends a message, it will use the main transport's send method.
+ *
+ * @param transport - The main transport to wrap
+ * @param puppet - The puppet transport that will handle forwarded methods (optional)
+ * @param methods - Array of method names to forward (default: tools/list, tools/call)
+ * @returns The wrapped transport with puppet capabilities
+ *
+ * @example
+ * ```typescript
+ * const transport = bindPuppet(
+ *   mainTransport,
+ *   puppetTransport,
+ *   ["tools/list", "tools/call", "resources/read"]
+ * );
+ * ```
  */
-export function withPuppet<T extends Transport>(
+export function bindPuppet<T extends Transport>(
   transport: T,
+  puppet: T | null | undefined,
+  methods: readonly string[] = [...DEFAULT_FORWARDED],
 ): PuppetTransport<T> & T {
-  // Store puppet mappings
+  // Store original handlers for restoration
+  let originalTransportHandler: ((message: JSONRPCMessage) => void) | undefined;
+  let originalPuppetSend:
+    | ((message: JSONRPCMessage) => Promise<void>)
+    | undefined;
+  let boundPuppet: Transport | null = null;
 
   /**
-   * Bind a puppet client to intercept methods
+   * Apply the puppet binding to the transport.
+   *
+   * This intercepts the transport's onmessage handler to forward matching methods
+   * to the puppet, and intercepts the puppet's send method to use the main transport.
    */
-  function bindPuppet(
+  function applyPuppetBinding(
     puppet: Transport,
-    methods: readonly string[] = [...DEFAULT_FORWARDED],
+    methods: readonly string[],
   ): void {
-    const originalSend = puppet.send?.bind(transport);
-    const originalHandler = transport.onmessage?.bind(transport);
+    boundPuppet = puppet;
+    originalPuppetSend = puppet.send?.bind(puppet);
+    originalTransportHandler = transport.onmessage?.bind(transport);
 
-    // Intercept host onmessage events, protocol level
+    // Intercept main transport's onmessage to forward matching methods to puppet
     transport.onmessage = (msg: JSONRPCMessage) => {
-      console.log(`intercepted transport onmessage: ${JSON.stringify(msg)}`);
+      console.error(
+        `[Puppet] Intercepted transport onmessage: ${JSON.stringify(msg)}`,
+      );
       const parsed = JSONRPCMessageSchema.safeParse(msg);
       if (!parsed.success) {
-        originalHandler?.(msg);
+        originalTransportHandler?.(msg);
         return;
       }
 
       const method = "method" in parsed.data ? parsed.data.method : null;
       const shouldForward = method && methods.includes(method);
-      console.log(
-        `should forward to puppet: ${shouldForward}`,
+      console.error(
+        `[Puppet] Should forward to puppet=${shouldForward}, method=${method}`,
         puppet.onmessage,
       );
       if (shouldForward) {
         return puppet?.onmessage?.(msg);
       }
 
-      originalHandler?.(msg);
+      originalTransportHandler?.(msg);
     };
 
-    // Intercept puppet sends, use transport send
-    puppet.send = async (
-      message: JSONRPCMessage,
-    ): Promise<void> => {
-      console.log(`intercepted puppet send: ${JSON.stringify(message)}`);
+    // Intercept puppet's send to use main transport's connection
+    puppet.send = async (message: JSONRPCMessage): Promise<void> => {
+      console.error(
+        `[Puppet] Intercepted puppet send: ${JSON.stringify(message)}`,
+      );
       await transport.send?.(message);
-      await originalSend?.(message);
+      await originalPuppetSend?.(message);
     };
   }
 
   /**
-   * Remove puppet binding
+   * Remove puppet binding and restore original handlers.
+   *
+   * This restores both the main transport's onmessage handler and
+   * the puppet's send method to their original implementations.
    */
-  function unbindPuppet(sessionId: string): void {
-    puppets.delete(sessionId);
-
-    const original = originalHandlers.get(sessionId);
-    if (original) {
-      const transportWithHandler = transport as Transport;
-      transportWithHandler.onmessage = original;
-      originalHandlers.delete(sessionId);
+  function unbindPuppet(): void {
+    if (!boundPuppet) {
+      console.error("[Puppet] No puppet bound, nothing to unbind");
+      return;
     }
+
+    console.error("[Puppet] Unbinding puppet and restoring original handlers");
+
+    // Restore transport's original onmessage handler
+    if (originalTransportHandler) {
+      transport.onmessage = originalTransportHandler;
+    }
+
+    // Restore puppet's original send method
+    if (boundPuppet && originalPuppetSend) {
+      boundPuppet.send = originalPuppetSend;
+    }
+
+    // Clear references
+    boundPuppet = null;
+    originalTransportHandler = undefined;
+    originalPuppetSend = undefined;
   }
 
   /**
-   * Get the original transport
+   * Get the original unwrapped transport instance
    */
   function unwrap(): T {
     return transport;
   }
 
-  // Simply add methods to the transport object
+  // Wrap the start method to apply puppet binding after the transport connection is established.
+  // This ensures the transport has its onmessage handler set before we intercept it.
+  const originalStart = transport.start?.bind(transport);
+  if (originalStart) {
+    transport.start = async function () {
+      await originalStart();
+      // Apply puppet binding after connection is ready
+      if (puppet) {
+        console.error(
+          "[Puppet] Applying puppet binding after connection established",
+        );
+        applyPuppetBinding(puppet, methods);
+      }
+    };
+  }
+
+  // Return the transport with added puppet management methods
   return Object.assign(transport, {
-    bindPuppet,
     unbindPuppet,
     unwrap,
   }) as PuppetTransport<T> & T;

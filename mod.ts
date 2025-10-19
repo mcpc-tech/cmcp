@@ -1,8 +1,8 @@
 export {
   ClientExecServer,
-  createClientExecServer,
-  ClientToolResponseRequestSchema,
   ClientToolRegistrationRequestSchema,
+  ClientToolResponseRequestSchema,
+  createClientExecServer,
 } from "./decorators/client_exec_server.ts";
 
 export {
@@ -10,7 +10,7 @@ export {
   createClientExecClient,
 } from "./decorators/client_exec_client.ts";
 
-export { PUPPET_METHODS, withPuppet } from "./decorators/with_puppet.ts";
+export { bindPuppet, PUPPET_METHODS } from "./decorators/with_puppet.ts";
 
 export { type ClientToolDefinition } from "./shared/types.ts";
 
