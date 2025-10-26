@@ -179,12 +179,14 @@ export function bindPuppet<T extends Transport>(
     return transport;
   }
 
-  // Wrap the start method to apply puppet binding after the transport connection is established.
-  // This ensures the transport has its onmessage handler set before we intercept it.
-  const originalStart = transport.start?.bind(transport);
-  if (originalStart) {
+  if (puppet) {
+    // Wrap the start method to apply puppet binding after the transport connection is established.
+    // This ensures the transport has its onmessage handler set before we intercept it.
+    const originalStart = transport.start?.bind(transport);
+    const originalPuppetStart = puppet.start?.bind(puppet);
+
     transport.start = async function () {
-      await originalStart();
+      await originalStart?.();
       // Apply puppet binding after connection is ready
       if (puppet) {
         console.error(
@@ -192,6 +194,12 @@ export function bindPuppet<T extends Transport>(
         );
         applyPuppetBinding(puppet, methods);
       }
+    };
+
+    puppet.start = async function () {
+      await originalPuppetStart?.();
+      // If the puppet re-connects, re-apply the binding as well
+      applyPuppetBinding(puppet, methods);
     };
   }
 
