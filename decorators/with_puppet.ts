@@ -59,6 +59,9 @@ interface PuppetTransport<T extends Transport> extends Transport {
 
   /** Get the original unwrapped transport */
   unwrap(): T;
+
+  /** ID of the currently bound puppet transport (if any) */
+  boundPuppetId?: string;
 }
 
 /**
@@ -207,5 +210,6 @@ export function bindPuppet<T extends Transport>(
   return Object.assign(transport, {
     unbindPuppet,
     unwrap,
+    boundPuppetId: puppet?.sessionId,
   }) as PuppetTransport<T> & T;
 }
