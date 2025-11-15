@@ -27,27 +27,43 @@
 
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import {
+  CallToolRequestSchema,
+  CompleteRequestSchema,
+  GetPromptRequestSchema,
   type JSONRPCMessage,
   JSONRPCMessageSchema,
+  ListPromptsRequestSchema,
+  ListResourcesRequestSchema,
+  ListToolsRequestSchema,
+  PingRequestSchema,
+  ReadResourceRequestSchema,
+  SetLevelRequestSchema,
+  SubscribeRequestSchema,
+  UnsubscribeRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import { ExecuteToolNotificationSchema } from "./client_exec_client.ts";
+import {
+  ClientToolRegistrationRequestSchema,
+  ClientToolResponseRequestSchema,
+} from "./client_exec_server.ts";
 
-/**
- * Methods that can be forwarded to puppet clients
- */
 export const PUPPET_METHODS = {
-  ListTools: "tools/list",
-  CallTool: "tools/call",
-  ListResources: "resources/list",
-  ReadResource: "resources/read",
-  ListPrompts: "prompts/list",
+  ListTools: ListToolsRequestSchema.shape.method.value,
+  CallTool: CallToolRequestSchema.shape.method.value,
+  ListResources: ListResourcesRequestSchema.shape.method.value,
+  ReadResource: ReadResourceRequestSchema.shape.method.value,
+  ListPrompts: ListPromptsRequestSchema.shape.method.value,
+  GetPrompt: GetPromptRequestSchema.shape.method.value,
+  Complete: CompleteRequestSchema.shape.method.value,
+  SetLevel: SetLevelRequestSchema.shape.method.value,
+  Subscribe: SubscribeRequestSchema.shape.method.value,
+  Unsubscribe: UnsubscribeRequestSchema.shape.method.value,
+  Ping: PingRequestSchema.shape.method.value,
 } as const;
 
-/**
- * Default methods forwarded to puppet
- */
 const DEFAULT_FORWARDED = [
-  PUPPET_METHODS.ListTools,
-  PUPPET_METHODS.CallTool,
+  ListToolsRequestSchema.shape.method.value,
+  CallToolRequestSchema.shape.method.value,
 ] as const;
 
 /**
@@ -59,6 +75,9 @@ interface PuppetTransport<T extends Transport> extends Transport {
 
   /** Get the original unwrapped transport */
   unwrap(): T;
+
+  /** ID of the currently bound puppet transport (if any) */
+  boundPuppetId?: string;
 }
 
 /**
@@ -121,6 +140,17 @@ export function bindPuppet<T extends Transport>(
       }
 
       const method = "method" in parsed.data ? parsed.data.method : null;
+
+      // Never forward internal protocol methods
+      if (
+        method === ClientToolResponseRequestSchema.shape.method.value ||
+        method === ExecuteToolNotificationSchema.shape.method.value ||
+        method === ClientToolRegistrationRequestSchema.shape.method.value
+      ) {
+        originalTransportHandler?.(msg);
+        return;
+      }
+
       const shouldForward = method && methods.includes(method);
       console.error(
         `[puppet] should forward to puppet=${shouldForward}, method=${method}`,
@@ -207,5 +237,6 @@ export function bindPuppet<T extends Transport>(
   return Object.assign(transport, {
     unbindPuppet,
     unwrap,
+    boundPuppetId: puppet?.sessionId,
   }) as PuppetTransport<T> & T;
 }
