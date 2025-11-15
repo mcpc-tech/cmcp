@@ -2,7 +2,15 @@ import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { z } from "zod";
 import type { ClientToolDefinition } from "../shared/types.ts";
 
-const ExecuteToolNotificationSchema = z.object({
+export const ExecuteToolNotificationSchema: z.ZodObject<{
+  method: z.ZodLiteral<"proxy/execute_tool">;
+  params: z.ZodObject<{
+    id: z.ZodString;
+    toolName: z.ZodString;
+    args: z.ZodRecord<z.ZodString, z.ZodUnknown>;
+    clientId: z.ZodString;
+  }>;
+}> = z.object({
   method: z.literal("proxy/execute_tool"),
   params: z.object({
     id: z.string(),
