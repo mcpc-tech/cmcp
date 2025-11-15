@@ -27,27 +27,20 @@
 
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import {
+  CallToolRequestSchema,
   type JSONRPCMessage,
   JSONRPCMessageSchema,
+  ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import { ExecuteToolNotificationSchema } from "./client_exec_client.ts";
+import {
+  ClientToolRegistrationRequestSchema,
+  ToolResponseRequestSchema,
+} from "./client_exec_server.ts";
 
-/**
- * Methods that can be forwarded to puppet clients
- */
-export const PUPPET_METHODS = {
-  ListTools: "tools/list",
-  CallTool: "tools/call",
-  ListResources: "resources/list",
-  ReadResource: "resources/read",
-  ListPrompts: "prompts/list",
-} as const;
-
-/**
- * Default methods forwarded to puppet
- */
 const DEFAULT_FORWARDED = [
-  PUPPET_METHODS.ListTools,
-  PUPPET_METHODS.CallTool,
+  ListToolsRequestSchema.shape.method.value,
+  CallToolRequestSchema.shape.method.value,
 ] as const;
 
 /**
@@ -124,6 +117,17 @@ export function bindPuppet<T extends Transport>(
       }
 
       const method = "method" in parsed.data ? parsed.data.method : null;
+
+      // Never forward internal protocol methods
+      if (
+        method === ToolResponseRequestSchema.shape.method.value ||
+        method === ExecuteToolNotificationSchema.shape.method.value ||
+        method === ClientToolRegistrationRequestSchema.shape.method.value
+      ) {
+        originalTransportHandler?.(msg);
+        return;
+      }
+
       const shouldForward = method && methods.includes(method);
       console.error(
         `[puppet] should forward to puppet=${shouldForward}, method=${method}`,

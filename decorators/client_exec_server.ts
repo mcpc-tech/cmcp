@@ -16,7 +16,7 @@ import type { ClientToolDefinition } from "../shared/types.ts";
 
 type ToolType = z.infer<typeof ToolSchema>;
 
-export const ClientToolResponseRequestSchema: z.ZodObject<{
+export const ToolResponseRequestSchema: z.ZodObject<{
   method: z.ZodLiteral<"proxy/tool_response">;
   params: z.ZodObject<{
     id: z.ZodString;
@@ -105,21 +105,7 @@ export class ClientExecServer {
   constructor(server: Server, clientId: string) {
     this.server = server;
     this.clientId = clientId;
-
     this.setupStandardHandlers();
-
-    return new Proxy(this, {
-      get(target, prop) {
-        if (prop in target) {
-          return target[prop as keyof typeof target];
-        }
-        const serverProp = target.server[prop as keyof typeof target.server];
-        if (typeof serverProp === "function") {
-          return serverProp.bind(target.server);
-        }
-        return serverProp;
-      },
-    }) as unknown as ClientExecServer & Server;
   }
 
   /**
@@ -182,7 +168,7 @@ export class ClientExecServer {
 
     // Handle client tool execution responses
     this.server.setRequestHandler(
-      ClientToolResponseRequestSchema,
+      ToolResponseRequestSchema,
       (request) => this.handleClientResponse(request.params),
     );
   }
@@ -501,6 +487,13 @@ export class ClientExecServer {
     }
     this.pendingRequests.clear();
   }
+
+  /**
+   * Get the underlying server instance
+   */
+  unwrap(): Server {
+    return this.server;
+  }
 }
 
 /**
@@ -532,7 +525,8 @@ export function createClientExecServer(
   server: Server,
   clientId: string,
 ): ClientExecServer & Server {
-  return new ClientExecServer(server, clientId) as unknown as
-    & ClientExecServer
-    & Server;
+  const execServer = new ClientExecServer(server, clientId);
+
+  // Simply assign all methods - no Proxy needed!
+  return Object.assign(execServer, server) as ClientExecServer & Server;
 }

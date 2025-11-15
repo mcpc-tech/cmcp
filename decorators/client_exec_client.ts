@@ -2,7 +2,7 @@ import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { z } from "zod";
 import type { ClientToolDefinition } from "../shared/types.ts";
 
-const ExecuteToolNotificationSchema = z.object({
+export const ExecuteToolNotificationSchema = z.object({
   method: z.literal("proxy/execute_tool"),
   params: z.object({
     id: z.string(),
@@ -75,19 +75,6 @@ export class ClientExecClient {
       ExecuteToolNotificationSchema,
       (notification) => this.handleExecutionNotification(notification.params),
     );
-
-    return new Proxy(this, {
-      get(target, prop) {
-        if (prop in target) {
-          return target[prop as keyof typeof target];
-        }
-        const serverProp = target.client[prop as keyof typeof target.client];
-        if (typeof serverProp === "function") {
-          return serverProp.bind(target.client);
-        }
-        return serverProp;
-      },
-    }) as unknown as ClientExecClient & Client;
   }
 
   /**
@@ -223,6 +210,13 @@ export class ClientExecClient {
       registeredToServer: this.toolDefinitions.length > 0,
     };
   }
+
+  /**
+   * Get the underlying client instance
+   */
+  unwrap(): Client {
+    return this.client;
+  }
 }
 
 /**
@@ -271,7 +265,8 @@ export function createClientExecClient(
   client: Client,
   clientId: string,
 ): ClientExecClient & Client {
-  return new ClientExecClient(client, clientId) as unknown as
-    & ClientExecClient
-    & Client;
+  const execClient = new ClientExecClient(client, clientId);
+
+  // Simply assign all methods - no Proxy needed!
+  return Object.assign(execClient, client) as ClientExecClient & Client;
 }
