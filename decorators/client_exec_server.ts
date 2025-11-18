@@ -300,17 +300,17 @@ export class ClientExecServer {
   }
 
   /**
-   * Register tools (static registration for backward compatibility)
+   * Register client tool schemas (static registration)
    */
-  registerToolSchemas(tools: ClientToolDefinition[]) {
+  registerClientToolSchemas(tools: Tool[]) {
     for (const tool of tools) {
-      const toolName = this.getToolName("server", tool.name);
+      const toolName = this.getToolName("client", tool.name);
       this.tools.set(toolName, {
         name: tool.name,
         description: tool.description,
         inputSchema: tool.inputSchema,
       });
-      this.toolToClient.set(toolName, "server"); // Mark as server-owned
+      this.toolToClient.set(toolName, this.clientId);
     }
   }
 
