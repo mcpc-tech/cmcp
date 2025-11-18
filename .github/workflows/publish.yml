@@ -49,7 +49,14 @@ jobs:
             if npm view "$NAME@$VERSION" version 2>/dev/null; then
               echo "Skipping $NAME@$VERSION (already published)"
             else
-              npm publish --access public --provenance
+              # Check if version is a prerelease (contains -, alpha, beta, rc, etc.)
+              if [[ "$VERSION" =~ [0-9]+\.[0-9]+\.[0-9]+-.*$ ]]; then
+                echo "Publishing prerelease $NAME@$VERSION with tag beta"
+                npm publish --access public --provenance --tag beta
+              else
+                echo "Publishing stable $NAME@$VERSION"
+                npm publish --access public --provenance
+              fi
             fi
             cd ../..
           done
