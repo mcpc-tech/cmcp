@@ -91,6 +91,7 @@ export class ClientExecServer {
   private tools: Map<string, Tool> = new Map();
   private clientTools: Map<string, Set<string>> = new Map(); // clientId -> tool names
   private toolToClient: Map<string, string> = new Map(); // toolName -> clientId
+  private predefinedTools: Set<string> = new Set(); // Track predefined (schema-only) tools
   private useNamespacing: boolean = false; // Enable namespacing for tool isolation
   private pendingRequests: Map<
     string,
@@ -238,6 +239,7 @@ export class ClientExecServer {
       // Check for tool name conflicts
       if (this.tools.has(toolName)) {
         const existingOwner = this.toolToClient.get(toolName);
+        const isPredefined = this.predefinedTools.has(toolName);
 
         if (this.useNamespacing) {
           // With namespacing, this shouldn't happen unless there's a bug
@@ -246,8 +248,16 @@ export class ClientExecServer {
           );
           conflicts.push(tool.name);
           continue;
+        } else if (isPredefined && existingOwner === this.clientId) {
+          // Allow client to provide implementation for predefined tool
+          console.log(
+            `Client ${clientId} providing implementation for predefined tool: ${tool.name}`,
+          );
+          // Remove from predefined set as it now has an implementation
+          this.predefinedTools.delete(toolName);
+          // Continue to register with actual client
         } else {
-          // Without namespacing, handle conflicts based on strategy
+          // Real conflict: tool already has an implementation from another client
           console.warn(
             `Tool ${tool.name} already exists, owned by client ${existingOwner}. Skipping registration for client ${clientId}`,
           );
@@ -294,6 +304,7 @@ export class ClientExecServer {
       for (const toolName of clientToolNames) {
         this.tools.delete(toolName);
         this.toolToClient.delete(toolName); // Remove tool-to-client mapping
+        this.predefinedTools.delete(toolName); // Remove from predefined if present
       }
       this.clientTools.delete(clientId);
     }
@@ -301,13 +312,14 @@ export class ClientExecServer {
 
   /**
    * Register client tool schemas (static registration)
+   * These tools have schemas but no implementation until a client connects
    */
   registerClientToolSchemas(tools: Tool[]) {
     // Clean up previous tools from this client first
     this.unregisterClientTools(this.clientId);
-    
+
     const clientToolNames = new Set<string>();
-    
+
     for (const tool of tools) {
       const toolName = this.getToolName(this.clientId, tool.name);
       this.tools.set(toolName, {
@@ -316,9 +328,10 @@ export class ClientExecServer {
         inputSchema: tool.inputSchema,
       });
       this.toolToClient.set(toolName, this.clientId);
+      this.predefinedTools.add(toolName); // Mark as predefined (schema-only)
       clientToolNames.add(toolName);
     }
-    
+
     this.clientTools.set(this.clientId, clientToolNames);
   }
 
