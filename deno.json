@@ -1,6 +1,6 @@
 {
   "name": "@mcpc/cmcp",
-  "version": "0.0.12",
+  "version": "0.0.13-beta.1",
   "description": "Client-Tool-Execution MCP Server",
   "author": "mcpc.tech",
   "license": "MIT",

@@ -303,15 +303,23 @@ export class ClientExecServer {
    * Register client tool schemas (static registration)
    */
   registerClientToolSchemas(tools: Tool[]) {
+    // Clean up previous tools from this client first
+    this.unregisterClientTools(this.clientId);
+    
+    const clientToolNames = new Set<string>();
+    
     for (const tool of tools) {
-      const toolName = this.getToolName("client", tool.name);
+      const toolName = this.getToolName(this.clientId, tool.name);
       this.tools.set(toolName, {
         name: tool.name,
         description: tool.description,
         inputSchema: tool.inputSchema,
       });
       this.toolToClient.set(toolName, this.clientId);
+      clientToolNames.add(toolName);
     }
+    
+    this.clientTools.set(this.clientId, clientToolNames);
   }
 
   /**
