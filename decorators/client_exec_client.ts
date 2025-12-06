@@ -144,18 +144,18 @@ export class ClientExecClient {
       );
 
       console.log(
-        `Successfully registered ${result.registeredTools.length} tools to server:`,
+        `[cmcp] Successfully registered ${result.registeredTools.length} tools to server:`,
         result.registeredTools,
       );
 
       if (result.conflicts && result.conflicts.length > 0) {
         console.warn(
-          `Tool registration conflicts for ${result.conflicts.length} tools:`,
+          `[cmcp] Tool registration conflicts for ${result.conflicts.length} tools:`,
           result.conflicts,
         );
       }
     } catch (error) {
-      console.error("Failed to register tools to server:", error);
+      console.error("[cmcp] Failed to register tools to server:", error);
       throw error;
     }
   }
@@ -172,7 +172,7 @@ export class ClientExecClient {
     // Validate client ID
     if (params.clientId !== this.clientId) {
       console.warn(
-        `Received execution request for different client: ${params.clientId}, expected: ${this.clientId}`,
+        `[cmcp] Received execution request for different client: ${params.clientId}, expected: ${this.clientId}`,
       );
       return;
     }
@@ -211,7 +211,7 @@ export class ClientExecClient {
         ToolResponseResultSchema,
       );
     } catch (responseError) {
-      console.error("Failed to send tool response:", responseError);
+      console.error("[cmcp] Failed to send tool response:", responseError);
     }
   }
 

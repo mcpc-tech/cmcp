@@ -88,7 +88,7 @@ async function main() {
     new SSEClientTransport(new URL("http://0.0.0.0:9000/sse")),
   );
 
-  console.log("Client connected and tools registered!");
+  console.log("[cmcp] Client connected and tools registered!");
 
   // Test tool execution
   const echoResult = await client.callTool({
@@ -99,7 +99,7 @@ async function main() {
     },
   });
 
-  console.log("Echo result:", echoResult);
+  console.log("[cmcp] Echo result:", echoResult);
 
   const timeResult = await client.callTool({
     name: "getCurrentTime",
@@ -110,10 +110,10 @@ async function main() {
 
   await client.close();
 
-  console.log("Time result:", timeResult);
+  console.log("[cmcp] Time result:", timeResult);
 }
 
 // Run if this file is executed directly
 if (import.meta.main) {
-  main().catch(console.error);
+  main().catch((err) => console.error("[cmcp] Unhandled error in client main:", err));
 }

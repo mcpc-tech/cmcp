@@ -131,8 +131,8 @@ export function bindPuppet<T extends Transport>(
     // Intercept main transport's onmessage to forward matching methods to puppet
     transport.onmessage = (msg: JSONRPCMessage) => {
       console.error(
-        `[puppet] intercepted transport onmessage: ${JSON.stringify(msg)}`,
-      );
+          `[cmcp] [puppet] intercepted transport onmessage: ${JSON.stringify(msg)}`,
+        );
       const parsed = JSONRPCMessageSchema.safeParse(msg);
       if (!parsed.success) {
         originalTransportHandler?.(msg);
@@ -153,7 +153,7 @@ export function bindPuppet<T extends Transport>(
 
       const shouldForward = method && methods.includes(method);
       console.error(
-        `[puppet] should forward to puppet=${shouldForward}, method=${method}`,
+        `[cmcp] [puppet] should forward to puppet=${shouldForward}, method=${method}`,
       );
       if (shouldForward) {
         return puppet?.onmessage?.(msg);
@@ -165,7 +165,7 @@ export function bindPuppet<T extends Transport>(
     // Intercept puppet's send to use main transport's connection
     puppet.send = async (message: JSONRPCMessage): Promise<void> => {
       console.error(
-        `[puppet] intercepted puppet send: ${JSON.stringify(message)}`,
+        `[cmcp] [puppet] intercepted puppet send: ${JSON.stringify(message)}`,
       );
       await transport.send?.(message);
       await originalPuppetSend?.(message);
@@ -180,11 +180,11 @@ export function bindPuppet<T extends Transport>(
    */
   function unbindPuppet(): void {
     if (!boundPuppet) {
-      console.error("[puppet] no puppet bound, nothing to unbind");
+      console.error("[cmcp] [puppet] no puppet bound, nothing to unbind");
       return;
     }
 
-    console.error("[puppet] unbinding puppet and restoring original handlers");
+    console.error("[cmcp] [puppet] unbinding puppet and restoring original handlers");
 
     // Restore transport's original onmessage handler
     if (originalTransportHandler) {
@@ -220,7 +220,7 @@ export function bindPuppet<T extends Transport>(
       // Apply puppet binding after connection is ready
       if (puppet) {
         console.error(
-          `[puppet] applying puppet binding after connection established, controler: ${transport.sessionId}, puppet: ${puppet.sessionId}`,
+          `[cmcp] [puppet] applying puppet binding after connection established, controler: ${transport.sessionId}, puppet: ${puppet.sessionId}`,
         );
         applyPuppetBinding(puppet, methods);
       }

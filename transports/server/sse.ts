@@ -74,7 +74,7 @@ export async function handleConnecting(
   await srv.connect(transport).then();
 
   console.log(
-    `Created new SSE transport with sessionId: ${transport.sessionId}`,
+    `[cmcp] Created new SSE transport with sessionId: ${transport.sessionId}`,
   );
 
   return transport.sseResponse;
@@ -150,7 +150,7 @@ export class SSEServerTransport implements Transport {
       },
       cancel: (reason) => {
         console.log(
-          `SSE stream cancelled with sessionId: ${this.#sessionId}`,
+          `[cmcp] SSE stream cancelled with sessionId: ${this.#sessionId}`,
           reason,
         );
         this.#cleanup();
@@ -217,7 +217,7 @@ export class SSEServerTransport implements Transport {
 
       return new Response("Accepted", { status: 202 });
     } catch (error) {
-      console.log(error);
+      console.error("[cmcp] Error handling post message:", error);
       const errorObj = error instanceof Error
         ? error
         : new Error(String(error));

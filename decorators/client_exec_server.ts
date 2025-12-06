@@ -244,14 +244,14 @@ export class ClientExecServer {
         if (this.useNamespacing) {
           // With namespacing, this shouldn't happen unless there's a bug
           console.error(
-            `Unexpected tool name conflict with namespacing: ${toolName}`,
+            `[cmcp] Unexpected tool name conflict with namespacing: ${toolName}`,
           );
           conflicts.push(tool.name);
           continue;
         } else if (isPredefined && existingOwner === this.clientId) {
           // Allow client to provide implementation for predefined tool
           console.log(
-            `Client ${clientId} providing implementation for predefined tool: ${tool.name}`,
+            `[cmcp] Client ${clientId} providing implementation for predefined tool: ${tool.name}`,
           );
           // Remove from predefined set as it now has an implementation
           this.predefinedTools.delete(toolName);
@@ -259,7 +259,7 @@ export class ClientExecServer {
         } else {
           // Real conflict: tool already has an implementation from another client
           console.warn(
-            `Tool ${tool.name} already exists, owned by client ${existingOwner}. Skipping registration for client ${clientId}`,
+            `[cmcp] Tool ${tool.name} already exists, owned by client ${existingOwner}. Skipping registration for client ${clientId}`,
           );
           conflicts.push(tool.name);
           continue;
@@ -283,7 +283,7 @@ export class ClientExecServer {
 
     if (conflicts.length > 0) {
       console.warn(
-        `Client ${clientId} had ${conflicts.length} tool conflicts:`,
+        `[cmcp] Client ${clientId} had ${conflicts.length} tool conflicts:`,
         conflicts,
       );
     }

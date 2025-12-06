@@ -115,7 +115,7 @@ Deno.test("Puppet client integration test", async (t) => {
           "Puppet processed: Hello from controller",
         );
 
-        console.log("✅ Puppet tool successfully called through controller!");
+        console.log("[cmcp] Puppet tool successfully called through controller!");
 
         // Give a moment for all messages to be processed
         await delay(200);

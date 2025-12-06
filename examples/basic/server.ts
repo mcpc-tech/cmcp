@@ -81,6 +81,6 @@ if (import.meta.main) {
   const port = Number(process.env.PORT || 9000);
   const hostname = "0.0.0.0";
 
-  console.log(`Starting server on http://${hostname}:${port}`);
+  console.log(`[cmcp] Starting server on http://${hostname}:${port}`);
   Deno.serve({ port, hostname }, app.fetch);
 }

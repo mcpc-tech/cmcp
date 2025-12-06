@@ -59,7 +59,7 @@ export function createClientExecWorkerTransport(
   worker: Worker,
 ): WorkerTransport {
   globalThis.addEventListener("beforeunload", () => {
-    console.log("Terminating the shared worker instance...");
+    console.log("[cmcp] Terminating the shared worker instance...");
     worker.terminate();
   });
 

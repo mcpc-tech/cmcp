@@ -40,7 +40,7 @@ Deno.test("Integration test for MCP server and client", async (t) => {
 
         await client.close();
       } catch (error) {
-        console.error("Client connection failed:", error);
+        console.error("[cmcp] Client connection failed:", error);
         throw error;
       }
     });
@@ -76,7 +76,7 @@ Deno.test("Integration test for MCP server and client", async (t) => {
         assertExists(timeResult);
         await client.close();
       } catch (error) {
-        console.error("Tool execution failed:", error);
+        console.error("[cmcp] Tool execution failed:", error);
         throw error;
       }
     });
